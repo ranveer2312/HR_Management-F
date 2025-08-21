@@ -1,14 +1,15 @@
 'use client';
+
 import React, { useState, useEffect, useCallback } from 'react';
 import {
-  FileText, 
-  Download, 
-  Eye, 
-  Search, 
-  Filter, 
-  Clock, 
-  CheckCircle, 
-  XCircle, 
+  FileText,
+  Download,
+  Eye,
+  Search,
+  Filter,
+  Clock,
+  CheckCircle,
+  XCircle,
   AlertCircle,
   LayoutDashboard,
   User,
@@ -16,13 +17,11 @@ import {
   Coffee,
   Plane,
   TrendingUp,
-  FileStack,
   MessageSquare,
   Package,
   BarChart3,
   GraduationCap,
   Menu,
-  X
 } from 'lucide-react';
 import axios from 'axios';
 import { APIURL } from '@/constants/api';
@@ -94,8 +93,12 @@ export default function DocumentsPage() {
       const list: ApiDocument[] = Array.isArray(res.data) ? res.data : [];
       setApiDocuments(list);
       setDocuments(list.map(mapApiDocumentToDocument));
-    } catch (e: any) {
-      setError('Failed to fetch documents');
+    } catch (err: unknown) { // Use 'unknown' instead of 'any'
+      if (err instanceof Error) {
+        setError('Failed to fetch documents: ' + err.message);
+      } else {
+        setError('Failed to fetch documents');
+      }
     } finally {
       setLoading(false);
     }
@@ -194,7 +197,7 @@ export default function DocumentsPage() {
 
   return (
     <div className="flex min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
-      {/* Sidebar
+      {/* Sidebar - Re-enabled and functional */}
       <div className={`fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-2xl transform ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0`}>
         <div className="flex items-center justify-between p-6 border-b border-slate-200">
           <h2 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
@@ -204,7 +207,7 @@ export default function DocumentsPage() {
             onClick={() => setSidebarOpen(false)}
             className="lg:hidden text-slate-500 hover:text-slate-700"
           >
-            <X className="w-6 h-6" />
+            <XCircle className="w-6 h-6" /> {/* Used XCircle for close icon */}
           </button>
         </div>
         <nav className="p-4 space-y-2">
@@ -213,10 +216,10 @@ export default function DocumentsPage() {
             return (
               <button
                 key={item.id}
-                  onClick={() => {
-                    setActiveItem(item.id);
-                    router.push(item.href);
-                  }}
+                onClick={() => {
+                  setActiveItem(item.id);
+                  router.push(item.href);
+                }}
                 className={`w-full flex items-center px-4 py-3 text-left rounded-xl transition-all duration-200 ${
                   activeItem === item.id
                     ? 'bg-gradient-to-r from-blue-500 to-indigo-600 text-white shadow-lg'
@@ -229,7 +232,7 @@ export default function DocumentsPage() {
             );
           })}
         </nav>
-      </div> */}
+      </div>
 
       {/* Overlay for mobile */}
       {sidebarOpen && (
@@ -306,7 +309,7 @@ export default function DocumentsPage() {
                   <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
                   <select
                     value={filterStatus}
-                    onChange={(e) => setFilterStatus(e.target.value as any)}
+                    onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setFilterStatus(e.target.value as 'all' | 'verified' | 'pending' | 'rejected')}
                     className="pl-10 pr-8 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none bg-white min-w-[150px]"
                   >
                     <option value="all">All Status</option>

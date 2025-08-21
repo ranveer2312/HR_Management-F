@@ -5,11 +5,9 @@ import {
   CheckCircle,
   XCircle,
   AlertCircle,
-  ArrowLeft,
   Search,
   MapPin,
 } from 'lucide-react';
-import Link from 'next/link';
 import axios from 'axios';
 import { APIURL } from '@/constants/api';
 

@@ -1,7 +1,6 @@
 'use client';
-import React, { useState, useEffect, useMemo } from 'react';
-import { 
-  FileText, 
+import React, { useState, useEffect } from 'react';
+import {
   Calendar,
   Clock,
   User,
@@ -10,28 +9,19 @@ import {
   ChevronRight,
   Search,
   Filter,
-  Star,
   Archive,
   MoreVertical,
-  Download,
   Eye,
   MessageSquare,
   Users,
   Settings,
   Home,
-  TrendingUp,
-  Coffee,
-  Plane,
-  Package,
-  BarChart3,
-  GraduationCap,
   Menu,
-  X,
-  LayoutDashboard
+  X
 } from 'lucide-react';
 import axios from 'axios';
 import { APIURL } from '@/constants/api';
-import { useRouter } from 'next/navigation';
+// import { useRouter } from 'next/navigation';
 
 interface Memo {
   id: string;
@@ -62,8 +52,8 @@ interface Memo {
 // ];
 
 export default function MemosAnnouncementsPage() {
-  const router = useRouter();
-  const [activeItem, setActiveItem] = useState('memos');
+  // const router = useRouter();
+  // const [activeItem, setActiveItem] = useState('memos');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterPriority, setFilterPriority] = useState<'all' | 'High Priority' | 'Medium Priority' | 'Low Priority'>('all');
@@ -75,10 +65,12 @@ export default function MemosAnnouncementsPage() {
 
   const employeeId = typeof window !== 'undefined' ? (sessionStorage.getItem('employeeId') || localStorage.getItem('employeeId')) : null;
 
-  const normalizeDate = (d: any): string => {
+  // Corrected function to avoid 'any'
+  const normalizeDate = (d: string | number[] | undefined): string => {
     if (!d) return '';
     if (Array.isArray(d) && d.length >= 3) {
-      const [y, m, day] = d; return `${y}-${String(m).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+      const [y, m, day] = d;
+      return `${y}-${String(m).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
     }
     if (typeof d === 'string') return d.split('T')[0];
     return '';
@@ -92,21 +84,23 @@ export default function MemosAnnouncementsPage() {
       try {
         const res = await axios.get(`${APIURL}/api/memos/employee/${employeeId}`);
         const list = Array.isArray(res.data) ? res.data : [];
-                 const mapped: Memo[] = list.map((m: any) => ({
-           id: String(m.id ?? m.memoId ?? Math.random()),
-           title: m.title || m.subject || 'Memo',
-           type: (m.meetingType || m.type || 'announcement') as Memo['type'],
-           priority: (m.priority || 'Medium Priority') as Memo['priority'],
-           sender: m.sentByName || m.sentBy || m.adminName || 'Admin',
-           department: m.recipientDepartments?.[0] || m.department || 'All',
-           date: normalizeDate(m.meetingDate || m.date || m.createdAt) || new Date().toISOString().split('T')[0],
-           time: m.time || undefined,
-           description: m.content || m.message || m.description || '',
-           status: (m.status?.toLowerCase?.() === 'read' ? 'read' : 'unread') as Memo['status'],
-           tags: Array.isArray(m.tags) ? m.tags : [],
-         }));
+
+        // Corrected mapping logic to avoid 'any' and handle potential missing keys
+        const mapped: Memo[] = list.map((m: Record<string, unknown>) => ({ // FIX 1: Replaced `any` with `unknown`
+          id: String(m.id ?? m.memoId ?? Math.random()),
+          title: (m.title || m.subject || 'Memo') as string,
+          type: (m.meetingType || m.type || 'announcement') as Memo['type'],
+          priority: (m.priority || 'Medium Priority') as Memo['priority'],
+          sender: (m.sentByName || m.sentBy || m.adminName || 'Admin') as string,
+          department: ((m.recipientDepartments as string[] | undefined)?.[0] || (m.department as string) || 'All'),
+          date: normalizeDate(m.meetingDate as string | number[] | undefined || m.date as string || m.createdAt as string) || new Date().toISOString().split('T')[0],
+          time: (m.time || undefined) as string,
+          description: (m.content || m.message || m.description || '') as string,
+          status: (String(m.status)?.toLowerCase?.() === 'read' ? 'read' : 'unread') as Memo['status'],
+          tags: Array.isArray(m.tags) ? m.tags as string[] : [],
+        }));
         setMemos(mapped);
-      } catch (e: any) {
+      } catch { // FIX 2: Removed the unused `err` variable from the catch block
         setError('Failed to fetch memos');
       } finally {
         setLoading(false);
@@ -176,62 +170,18 @@ export default function MemosAnnouncementsPage() {
     setSelectedMemo(null);
   };
 
+  // Re-run the filter logic only when memos, searchTerm, or filterPriority change.
+  // This is a good place to use `useMemo` if the list were very large, but the linter was complaining about it not being used. 
+  // Let's keep it simple for now to clear the error.
   const filteredMemos = memos.filter(memo => {
     const matchesSearch = memo.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         memo.description.toLowerCase().includes(searchTerm.toLowerCase());
+      memo.description.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesPriority = filterPriority === 'all' || memo.priority === filterPriority;
     return matchesSearch && matchesPriority;
   });
 
   return (
     <div className="flex min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
-      {/* Sidebar */}
-      {/* <div className={`fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-2xl transform ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0`}>
-        <div className="flex items-center justify-between p-6 border-b border-slate-200">
-          <div className="flex items-center space-x-3">
-            <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center">
-              <MessageSquare className="w-4 h-4 text-white" />
-            </div>
-            <h2 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-              InfoStream
-            </h2>
-          </div>
-          <button
-            onClick={() => setSidebarOpen(false)}
-            className="lg:hidden text-slate-500 hover:text-slate-700"
-          >
-            <X className="w-6 h-6" />
-          </button>
-        </div>
-        <nav className="p-4 space-y-2">
-          {sidebarItems.map((item) => {
-            const Icon = item.icon;
-            return (
-              <button
-                key={item.id}
-                onClick={() => {
-                  setActiveItem(item.id);
-                  router.push(item.href);
-                }}
-                className={`w-full flex items-center px-4 py-3 text-left rounded-xl transition-all duration-200 ${
-                  activeItem === item.id
-                    ? 'bg-gradient-to-r from-blue-500 to-indigo-600 text-white shadow-lg'
-                    : 'text-slate-700 hover:bg-slate-100 hover:text-slate-900'
-                }`}
-              >
-                <Icon className={`w-5 h-5 mr-3 ${activeItem === item.id ? 'text-white' : 'text-slate-500'}`} />
-                <span className="font-medium">{item.label}</span>
-                {item.id === 'memos' && (
-                  <span className="ml-auto bg-red-500 text-white text-xs rounded-full px-2 py-1">
-                    {memos.filter(m => m.status === 'unread').length}
-                  </span>
-                )}
-              </button>
-            );
-          })}
-        </nav>
-      </div> */}
-
       {/* Overlay for mobile */}
       {sidebarOpen && (
         <div
@@ -298,7 +248,7 @@ export default function MemosAnnouncementsPage() {
                   <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
                   <select
                     value={filterPriority}
-                    onChange={(e) => setFilterPriority(e.target.value as any)}
+                    onChange={(e) => setFilterPriority(e.target.value as 'all' | 'High Priority' | 'Medium Priority' | 'Low Priority')}
                     className="pl-10 pr-8 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none bg-white min-w-[180px]"
                   >
                     <option value="all">All Priorities</option>
@@ -327,7 +277,7 @@ export default function MemosAnnouncementsPage() {
                 </div>
               </div>
             </div>
-            
+
             {loading ? (
               <div className="text-center py-12">
                 <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent mx-auto"></div>
@@ -396,12 +346,12 @@ export default function MemosAnnouncementsPage() {
                           </div>
                         </div>
                       </div>
-                      
+
                       <div className="flex items-center space-x-3 ml-4">
                         <div className={`inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium border ${getPriorityColor(memo.priority)}`}>
                           {memo.priority}
                         </div>
-                        
+
                         <div className="flex items-center space-x-1">
                           <button
                             onClick={() => handleViewMemo(memo)}
@@ -437,7 +387,7 @@ export default function MemosAnnouncementsPage() {
                 <MessageSquare className="w-8 h-8 text-blue-200" />
               </div>
             </div>
-            
+
             <div className="bg-gradient-to-br from-red-500 to-red-600 rounded-2xl p-6 text-white">
               <div className="flex items-center justify-between">
                 <div>
@@ -447,7 +397,7 @@ export default function MemosAnnouncementsPage() {
                 <Bell className="w-8 h-8 text-red-200" />
               </div>
             </div>
-            
+
             <div className="bg-gradient-to-br from-amber-500 to-amber-600 rounded-2xl p-6 text-white">
               <div className="flex items-center justify-between">
                 <div>
@@ -457,11 +407,12 @@ export default function MemosAnnouncementsPage() {
                 <AlertCircle className="w-8 h-8 text-amber-200" />
               </div>
             </div>
-            
+
             <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-2xl p-6 text-white">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-emerald-100">This Week</p>
+                  {/* NOTE: This stat is not currently calculated, it just shows the total */}
                   <p className="text-3xl font-bold">{memos.length}</p>
                 </div>
                 <Calendar className="w-8 h-8 text-emerald-200" />
@@ -494,7 +445,7 @@ export default function MemosAnnouncementsPage() {
                 </button>
               </div>
             </div>
-            
+
             <div className="p-6 space-y-6">
               {/* Priority Badge */}
               <div className="flex items-center justify-between">

@@ -9,7 +9,6 @@ import {
   DollarSign,
   FileText,
   MessageSquare,
-  ChevronRight,
   Activity,
   X,
   User,
@@ -19,14 +18,9 @@ import {
   EyeOff,
   Shield,
   Bell,
-  Search,
-  Settings,
-  TrendingUp,
-  Clock,
   CheckCircle,
   AlertCircle,
   BarChart3,
-  LogOut
 } from 'lucide-react';
 import React, { useState, useEffect } from 'react';
 import { APIURL } from '@/constants/api';
@@ -212,10 +206,10 @@ export default function AdminDashboard() {
     }
   };
 
-  const handleLogout = () => {
-  localStorage.removeItem('token');
-  window.location.href = '/login';
-};
+//   const handleLogout = () => {
+//   localStorage.removeItem('token');
+//   window.location.href = '/login';
+// };
 
   const getStatusColor = (status: string) => {
     switch (status) {

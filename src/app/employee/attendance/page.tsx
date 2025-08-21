@@ -5,19 +5,7 @@ import {
   CheckCircle,
   XCircle,
   AlertCircle,
-  LayoutDashboard,
-  User,
   Clock,
-  Briefcase,
-  Calendar,
-  Star,
-  FileText,
-  ClipboardList,
-  Cpu,
-  BarChart2,
-  BookOpen,
-  Settings,
-  HelpCircle,
   RefreshCcw,
   MapPin,
   TrendingUp,
@@ -30,7 +18,6 @@ import axios from 'axios';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { APIURL } from '@/constants/api';
-import Image from 'next/image';
 
 interface Attendance {
   id?: number;
@@ -69,59 +56,24 @@ export default function AttendancePage() {
   const [loading, setLoading] = useState(false);
   const [employeeId, setEmployeeId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [employeeData, setEmployeeData] = useState<{name: string; designation: string; avatar?: string} | null>(null);
   const [showLocationDropdown, setShowLocationDropdown] = useState(false);
-  const [selectedLocation, setSelectedLocation] = useState<string>('');
-  const [isSigningIn, setIsSigningIn] = useState(false);
   const router = useRouter();
 
   const API_BASE_URL = `${APIURL}/api/attendance`;
 
   useEffect(() => {
-    console.log('APIURL constant:', APIURL); // Debug log
-    console.log('API_BASE_URL:', API_BASE_URL); // Debug log
-    
     const id = sessionStorage.getItem('employeeId') || localStorage.getItem('employeeId');
     if (!id) {
       router.replace('/login');
       return;
     }
     setEmployeeId(id);
-    fetchEmployeeProfile(id);
   }, [router]);
-
-  const fetchEmployeeProfile = async (empId: string) => {
-    try {
-      console.log('Fetching employee profile for ID:', empId); // Debug log
-      console.log('API URL:', `${APIURL}/api/employees/byEmployeeId/${empId}`); // Debug log
-      
-      const response = await axios.get(`${APIURL}/api/employees/byEmployeeId/${empId}`);
-      const emp = response.data;
-      if (emp) {
-        setEmployeeData({
-          name: emp.employeeName || 'Employee',
-          designation: emp.position || 'Staff',
-          avatar: emp.profilePhotoUrl ? `${APIURL}${emp.profilePhotoUrl}` : undefined,
-        });
-      }
-    } catch (error: any) {
-      console.error('Error fetching employee profile:', error);
-      console.error('Error response:', error.response); // Debug log
-      setEmployeeData({
-        name: 'Employee',
-        designation: 'Staff',
-      });
-    }
-  };
 
   const fetchAttendance = useCallback(async () => {
     if (!employeeId) return;
-
     setLoading(true);
     try {
-      console.log('Fetching attendance for employee:', employeeId); // Debug log
-      console.log('API URL:', `${API_BASE_URL}/employee/${employeeId}`); // Debug log
-      
       const response = await axios.get(`${API_BASE_URL}/employee/${employeeId}`);
       const fetchedAttendance: Attendance[] = response.data.map((record: AttendanceRecord) => ({
         ...record,
@@ -131,7 +83,6 @@ export default function AttendancePage() {
       }));
 
       setAttendance(fetchedAttendance);
-
       const today = new Date();
       const formattedToday = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
       const existingTodayAttendance = fetchedAttendance.find((a) => a.date === formattedToday);
@@ -150,10 +101,14 @@ export default function AttendancePage() {
         setTodayAttendance(newAttendance);
         setAttendance((prev) => [newAttendance, ...prev]);
       }
-    } catch (err: any) {
-      console.error('Error fetching attendance:', err);
-      console.error('Error response:', err.response); // Debug log
-      setError('Failed to fetch attendance data. Please try again.');
+    } catch (err: unknown) { // Changed to 'unknown' for better type safety
+      if (err instanceof Error) {
+        console.error('Error fetching attendance:', err.message);
+        setError('Failed to fetch attendance data. Please try again.');
+      } else {
+        console.error('An unexpected error occurred:', err);
+        setError('Failed to fetch attendance data. Please try again.');
+      }
     } finally {
       setLoading(false);
     }
@@ -165,8 +120,8 @@ export default function AttendancePage() {
     }
   }, [fetchAttendance, employeeId]);
 
-  const handleSignIn = async () => {
-    if (!employeeId || !selectedLocation) {
+  const handleSignIn = async (location: string) => {
+    if (!employeeId) {
       setError('Employee ID and work location are required');
       return;
     }
@@ -174,7 +129,6 @@ export default function AttendancePage() {
     try {
       setLoading(true);
       setError(null);
-      
       const now = new Date();
       const timeString = now.toLocaleTimeString('en-US', {
         hour12: false,
@@ -183,27 +137,19 @@ export default function AttendancePage() {
         second: '2-digit'
       });
 
-      // Ensure the payload matches exactly what the backend expects
       const payload = {
         employeeId: String(employeeId),
         checkInTime: String(timeString),
-        workLocation: String(selectedLocation),
-        // Add dummy location data since the database still requires them
+        workLocation: String(location),
         latitude: 0.0,
         longitude: 0.0
       };
 
-      console.log('Sending payload:', payload); // Debug log
-      console.log('API URL:', `${API_BASE_URL}/mark`); // Debug log
-
       const response = await axios.post(`${API_BASE_URL}/mark`, payload, {
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
       });
       
       const updatedRecord = response.data;
-
       const formattedRecord = {
         ...updatedRecord,
         date: Array.isArray(updatedRecord.date)
@@ -224,16 +170,10 @@ export default function AttendancePage() {
       });
       setError(null);
       setShowLocationDropdown(false);
-      setSelectedLocation('');
-      setIsSigningIn(false);
-    } catch (err: any) {
-      console.error('Sign in error:', err); // Debug log
-      console.error('Error response:', err.response?.data); // Debug log
-      const errorMessage = err.response?.data?.message || err.response?.data || 'Sign in failed. Please try again.';
+    } catch (err: unknown) { // Changed to 'unknown'
+      const errorMessage = err instanceof Error ? err.message : 'Sign in failed. Please try again.';
       setError(errorMessage);
-      setIsSigningIn(false);
       setShowLocationDropdown(false);
-      setSelectedLocation('');
     } finally {
       setLoading(false);
     }
@@ -280,31 +220,21 @@ export default function AttendancePage() {
         return prev;
       });
       setError(null);
-    } catch (err: any) {
-      const errorMessage = err.response?.data?.message || 'Sign out failed. Please try again.';
+    } catch (err: unknown) { // Changed to 'unknown'
+      const errorMessage = err instanceof Error ? err.message : 'Sign out failed. Please try again.';
       setError(errorMessage);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleSignInClick = () => {
-    setIsSigningIn(true);
-    setShowLocationDropdown(true);
-    setError(null);
-  };
-
   const handleLocationSelect = (location: string) => {
-    setSelectedLocation(location);
-    setError(null); // Clear any previous errors
-    // Don't close dropdown yet, let handleSignIn do it
-    handleSignIn();
+    // No need to set selectedLocation state if you call handleSignIn immediately
+    handleSignIn(location);
   };
 
   const cancelSignIn = () => {
-    setIsSigningIn(false);
     setShowLocationDropdown(false);
-    setSelectedLocation('');
   };
 
   const getStatusColor = (status: string) => {
@@ -401,12 +331,6 @@ export default function AttendancePage() {
     );
   };
 
-  const [tick, setTick] = useState(0);
-  useEffect(() => {
-    const id = setInterval(() => setTick((t) => t + 1), 60000);
-    return () => clearInterval(id);
-  }, []);
-
   const effectiveWorkHours = useMemo(() => {
     if (!todayAttendance) return 0;
     if (todayAttendance.checkOutTime) return todayAttendance.workHours || 0;
@@ -419,7 +343,7 @@ export default function AttendancePage() {
       return minutes / 60;
     }
     return 0;
-  }, [todayAttendance, tick]);
+  }, [todayAttendance]); // Removed 'tick' dependency
 
   const WorkHoursRing = ({ hours = 0, targetHours = WORK_TARGET_HOURS }: { hours: number; targetHours: number }) => {
     const percentage = Math.min((hours / targetHours) * 100, 100);
@@ -528,8 +452,8 @@ export default function AttendancePage() {
           {filteredAttendance.length > 0 ? (
             filteredAttendance.map((record, index) => (
               <div key={record.id || index} 
-                   className="group flex items-center justify-between p-6 border border-slate-200 rounded-xl 
-                            transition-all duration-300 hover:shadow-lg hover:border-indigo-200 hover:-translate-y-1">
+                  className="group flex items-center justify-between p-6 border border-slate-200 rounded-xl 
+                             transition-all duration-300 hover:shadow-lg hover:border-indigo-200 hover:-translate-y-1">
                 <div className="flex items-center space-x-6">
                   <div className="text-center">
                     <p className="text-sm font-medium text-slate-600">
@@ -575,7 +499,7 @@ export default function AttendancePage() {
                     </div>
                   )}
                   <span className={`px-4 py-2 rounded-xl text-sm font-semibold border transition-colors
-                                   ${getStatusColor(record.status)}`}>
+                                 ${getStatusColor(record.status)}`}>
                     {record.status.charAt(0).toUpperCase() + record.status.slice(1)}
                   </span>
                 </div>
@@ -595,7 +519,6 @@ export default function AttendancePage() {
  
   return (
     <div className="flex h-screen bg-gray-50">
-      {/* Main Content */}
       <div className="flex-1 overflow-auto">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="space-y-6">
@@ -609,13 +532,12 @@ export default function AttendancePage() {
               </Link>
             </div>
 
-            {/* Main Content */}
             <div className="space-y-10">
               <section className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
                 <div className="px-6 py-5 bg-slate-50 border-b border-slate-200">
                   <div className="flex justify-between items-start">
                     <div>
-                      <h3 className="text-lg font-semibold text-slate-900">Today's Attendance</h3>
+                      <h3 className="text-lg font-semibold text-slate-900">Today&apos;s Attendance</h3>
                       <p className="text-sm text-slate-500 mb-2">
                         {new Date().toLocaleDateString('en-US', {
                           weekday: 'long',
@@ -648,10 +570,9 @@ export default function AttendancePage() {
 
                 <div className="p-8">
                   <div className="flex flex-wrap gap-3 mb-8">
-                    {/* Sign In Button with Dropdown */}
                     <div className="relative">
                       <button
-                        onClick={handleSignInClick}
+                        onClick={() => setShowLocationDropdown(true)}
                         disabled={loading || todayAttendance?.checkInTime !== null}
                         className={`px-6 py-2.5 rounded-lg font-semibold text-sm transition-colors flex items-center space-x-3
                           ${todayAttendance?.checkInTime !== null
@@ -667,8 +588,7 @@ export default function AttendancePage() {
                           <ChevronDown className="w-4 h-4" />
                         )}
                       </button>
-
-                      {/* Location Dropdown */}
+                      
                       {showLocationDropdown && (
                         <div className="absolute top-full left-0 mt-2 w-64 bg-white border border-slate-200 rounded-lg shadow-lg z-50">
                           <div className="p-4">
@@ -713,7 +633,6 @@ export default function AttendancePage() {
                       <XCircle className="w-6 h-6" />
                       <span>{loading ? 'Processing...' : 'Sign Out'}</span>
                     </button>
-                    
                   </div>
 
                   <div className="grid grid-cols-1 xl:grid-cols-2 gap-12 items-center">

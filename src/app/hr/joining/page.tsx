@@ -1,5 +1,6 @@
 'use client';
 import React, { useState, useEffect } from 'react';
+import Image from 'next/image';
 import {
   Search,
   Plus,
@@ -543,11 +544,12 @@ export default function JoiningPage() {
               <div key={employee.id} className="bg-white rounded-xl shadow-sm p-6 hover:shadow-lg transition-all duration-300 flex flex-col">
                 <div className="flex items-center mb-4">
                   {employee.profilePhotoUrl ? (
-                    <div className="w-16 h-16 mr-4 shrink-0 bg-gray-200 rounded-full flex items-center justify-center overflow-hidden">
-                      <img 
+                    <div className="w-16 h-16 mr-4 shrink-0 bg-gray-200 rounded-full flex items-center justify-center overflow-hidden relative">
+                      <Image 
                         src={employee.profilePhotoUrl}
                         alt={employee.employeeName}
-                        className="w-full h-full object-cover" 
+                        fill
+                        className="object-cover" 
                       />
                     </div>
                   ) : (
@@ -644,9 +646,13 @@ export default function JoiningPage() {
                   <div className="space-y-4">
                     <div className="flex justify-center mb-4">
                       {selectedEmployee?.profilePhotoUrl ? (
-                        <div className="w-30 h-30 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden">
-                          <img src={selectedEmployee.profilePhotoUrl}
-                            alt={selectedEmployee.employeeName || 'Employee'} className="w-full h-full object-cover" />
+                        <div className="w-30 h-30 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden relative">
+                          <Image 
+                            src={selectedEmployee.profilePhotoUrl}
+                            alt={selectedEmployee.employeeName || 'Employee'} 
+                            fill
+                            className="object-cover" 
+                          />
                         </div>
                       ) : (
                         <div className="w-30 h-30 rounded-full bg-gray-200 flex items-center justify-center">
@@ -924,11 +930,12 @@ export default function JoiningPage() {
                           </button>
                         </div>
                         {profilePhotoPreview && (
-                          <div className="w-30 h-30 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden mt-4">
-                            <img
+                          <div className="w-30 h-30 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden mt-4 relative">
+                            <Image
                               src={profilePhotoPreview}
                               alt="Profile Preview"
-                              className="w-full h-full object-cover"
+                              fill
+                              className="object-cover"
                             />
                           </div>
                         )}
@@ -992,4 +999,3 @@ export default function JoiningPage() {
     </div>
   );
 }
- 

@@ -4,11 +4,10 @@ import React, { useState, useEffect } from 'react';
 import { 
   Download, FileText, Presentation, Users, Building, Database, Store, UserCheck, DollarSign,
   ArrowRight, Menu, X, Phone, Mail, MapPin, Award, Target, TrendingUp, Shield, CheckCircle, Star,
-  Globe, Zap, Play, BarChart3, Clock, Sparkles, Rocket, Heart, ChevronRight, Check, Briefcase,
-  Cpu, Layers, Activity, Eye, Lock, Smartphone, Cloud, Server, Wifi, BarChart, RefreshCw
+  Globe, Zap, Play, Clock, Sparkles, Rocket, Heart, ChevronRight, Check,
+  Cpu, BarChart, RefreshCw
 } from 'lucide-react';
 import { APIURL } from '@/constants/api';
-import { authFetch } from './utils/authFetch';
 import toast, { Toaster } from 'react-hot-toast';
 
 export default function HomePage() {
@@ -1236,6 +1235,6 @@ export default function HomePage() {
           animation: gradient-shift 3s ease-in-out infinite;
         }
       `}</style>
-    </div>
+    </div> 
   );
 }

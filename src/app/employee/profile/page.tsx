@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import Image from 'next/image';
 import {
   User,
   Briefcase,
@@ -21,8 +22,7 @@ import {
   RefreshCw,
   Search,
   ChevronDown,
-  Users,
-  Calendar,
+  Users
 } from 'lucide-react';
 
 interface Employee {
@@ -366,34 +366,10 @@ export default function EmployeeProfilePage() {
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const [uploadingPhoto, setUploadingPhoto] = useState<boolean>(false);
 
-  const apiService = new ApiService(API_BASE_URL);
+  // Create apiService instance only once using useMemo
+  const apiService = useMemo(() => new ApiService(API_BASE_URL), []);
 
-  // Load employees on component mount
-  useEffect(() => {
-    loadEmployees();
-  }, []);
-
-  // Load employee profile when selection changes
-  useEffect(() => {
-    if (selectedEmployeeId) {
-      loadEmployeeData(selectedEmployeeId);
-      // Remember selection in localStorage
-      localStorage?.setItem('currentEmployeeId', selectedEmployeeId);
-    }
-  }, [selectedEmployeeId]);
-
-  // Restore last selected employee from localStorage
-  useEffect(() => {
-    const lastSelectedId = localStorage?.getItem('currentEmployeeId');
-    if (lastSelectedId && employees.length > 0 && !selectedEmployeeId) {
-      const employeeExists = employees.some(emp => emp.employeeId === lastSelectedId);
-      if (employeeExists) {
-        setSelectedEmployeeId(lastSelectedId);
-      }
-    }
-  }, [employees, selectedEmployeeId]);
-
-  const loadEmployees = async () => {
+  const loadEmployees = useCallback(async () => {
     try {
       setEmployeesLoading(true);
       setError(null);
@@ -416,9 +392,9 @@ export default function EmployeeProfilePage() {
     } finally {
       setEmployeesLoading(false);
     }
-  };
+  }, [apiService, selectedEmployeeId]);
 
-  const loadEmployeeData = async (employeeId: string) => {
+  const loadEmployeeData = useCallback(async (employeeId: string) => {
     try {
       setLoading(true);
       setError(null);
@@ -458,7 +434,32 @@ export default function EmployeeProfilePage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [apiService]);
+
+  // Load employees on component mount
+  useEffect(() => {
+    loadEmployees();
+  }, [loadEmployees]);
+
+  // Load employee profile when selection changes
+  useEffect(() => {
+    if (selectedEmployeeId) {
+      loadEmployeeData(selectedEmployeeId);
+      // Remember selection in localStorage
+      localStorage?.setItem('currentEmployeeId', selectedEmployeeId);
+    }
+  }, [selectedEmployeeId, loadEmployeeData]);
+
+  // Restore last selected employee from localStorage
+  useEffect(() => {
+    const lastSelectedId = localStorage?.getItem('currentEmployeeId');
+    if (lastSelectedId && employees.length > 0 && !selectedEmployeeId) {
+      const employeeExists = employees.some(emp => emp.employeeId === lastSelectedId);
+      if (employeeExists) {
+        setSelectedEmployeeId(lastSelectedId);
+      }
+    }
+  }, [employees, selectedEmployeeId]);
 
   const handleEmployeeSelect = (employeeId: string) => {
     setSelectedEmployeeId(employeeId);
@@ -794,10 +795,13 @@ export default function EmployeeProfilePage() {
                       <div className="relative inline-block mb-4">
                         <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-white shadow-md mx-auto bg-gray-200">
                           {employee.profilePhotoUrl ? (
-                            <img
+                            <Image
                               src={employee.profilePhotoUrl}
-                              alt="Profile"
+                              alt={`${employee.employeeName} profile photo`}
+                              width={96}
+                              height={96}
                               className="w-full h-full object-cover"
+                              priority
                             />
                           ) : (
                             <div className="w-full h-full flex items-center justify-center bg-blue-100 text-blue-600 text-2xl font-bold">
