@@ -15,7 +15,14 @@ export default function HomePage() {
   const [activeSection, setActiveSection] = useState('home');
   const [scrollY, setScrollY] = useState(0);
   const [currentTestimonial, setCurrentTestimonial] = useState(0);
-  const [stats, setStats] = useState([
+  interface StatItem {
+    number: string;
+    label: string;
+    icon: React.ComponentType<{ className?: string }>;
+    color: string;
+  }
+
+  const [stats, setStats] = useState<StatItem[]>([
     { number: '0', label: 'Total Employees', icon: Building, color: 'from-blue-600 to-indigo-700' },
     { number: '0', label: 'Active Today', icon: Shield, color: 'from-emerald-600 to-teal-700' },
     { number: '0', label: 'Departments', icon: Globe, color: 'from-violet-600 to-purple-700' },
@@ -34,7 +41,18 @@ export default function HomePage() {
       if (!employeesResponse.ok) {
         throw new Error('Failed to fetch employees');
       }
-      const employees = await employeesResponse.json();
+      interface Employee {
+        department: string;
+        [key: string]: unknown;
+      }
+
+      interface Attendance {
+        date: string;
+        workHours?: number;
+        [key: string]: unknown;
+      }
+
+      const employees: Employee[] = await employeesResponse.json();
       
       // Fetch today's attendance
       const today = new Date().toISOString().split('T')[0];
@@ -42,14 +60,14 @@ export default function HomePage() {
       if (!attendanceResponse.ok) {
         throw new Error('Failed to fetch attendance');
       }
-      const allAttendance = await attendanceResponse.json();
-      const todayAttendance = allAttendance.filter((att: any) => att.date === today);
+      const allAttendance: Attendance[] = await attendanceResponse.json();
+      const todayAttendance = allAttendance.filter((att) => att.date === today);
       
       // Calculate department stats
-      const departments = [...new Set(employees.map((emp: any) => emp.department))];
+      const departments = [...new Set(employees.map((emp) => emp.department))];
       
       // Calculate average work hours
-      const totalWorkHours = allAttendance.reduce((sum: number, att: any) => {
+      const totalWorkHours = allAttendance.reduce((sum: number, att) => {
         return sum + (att.workHours || 0);
       }, 0);
       const avgWorkHours = allAttendance.length > 0 ? (totalWorkHours / allAttendance.length).toFixed(1) : '0';
@@ -92,7 +110,7 @@ export default function HomePage() {
       setCurrentTestimonial((prev) => (prev + 1) % testimonials.length);
     }, 5000);
     return () => clearInterval(interval);
-  }, []);
+  }, [testimonials.length]);
 
   useEffect(() => {
     fetchDashboardStats();
@@ -401,9 +419,9 @@ export default function HomePage() {
                 
                 <div className="space-y-3">
                   {[
-                    { label: 'Employee Onboarding', progress: loading ? 0 : Math.min(100, Math.round((stats[0].number as any) * 10)), color: 'bg-blue-600' },
+                    { label: 'Employee Onboarding', progress: loading ? 0 : Math.min(100, Math.round(parseFloat(stats[0].number) * 10)), color: 'bg-blue-600' },
                     { label: 'Attendance Rate', progress: loading ? 0 : stats[0].number !== '0' ? Math.round((parseInt(stats[1].number) / parseInt(stats[0].number)) * 100) : 0, color: 'bg-emerald-600' },
-                    { label: 'System Utilization', progress: loading ? 0 : Math.min(100, Math.round((stats[3].number as any) * 10)), color: 'bg-violet-600' }
+                    { label: 'System Utilization', progress: loading ? 0 : Math.min(100, Math.round(parseFloat(stats[3].number) * 10)), color: 'bg-violet-600' }
                   ].map((item, index) => (
                     <div key={index} className="bg-slate-800/50 rounded-lg p-3 hover:bg-slate-700/50 transition-colors duration-300">
                       <div className="flex justify-between text-sm text-slate-300 mb-2">
@@ -446,7 +464,7 @@ export default function HomePage() {
               Built for the Future of Work
             </h2>
             <p className="text-xl max-w-4xl mx-auto text-gray-600 leading-relaxed">
-              We're not just another HR platform. We're your strategic partner in digital transformation, 
+              We&apos;re not just another HR platform. We&apos;re your strategic partner in digital transformation, 
               building the future of work with cutting-edge technology and human-centric design.
             </p>
           </div>
@@ -633,7 +651,7 @@ export default function HomePage() {
               </div>
               
               <blockquote className="text-2xl font-medium text-gray-900 mb-8 italic">
-                "{testimonials[currentTestimonial].content}"
+                &ldquo;{testimonials[currentTestimonial].content}&rdquo;
               </blockquote>
               
               <div className="flex items-center justify-center">
@@ -1235,6 +1253,6 @@ export default function HomePage() {
           animation: gradient-shift 3s ease-in-out infinite;
         }
       `}</style>
-    </div> 
+    </div>
   );
 }
