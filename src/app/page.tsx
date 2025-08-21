@@ -105,12 +105,36 @@ export default function HomePage() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  const testimonials = [
+    {
+      name: 'Sarah Johnson',
+      role: 'HR Director',
+      company: 'TechCorp India',
+      content: 'Tiranga IDMS transformed our HR operations completely. The automation features saved us 15+ hours weekly!',
+      rating: 5
+    },
+    {
+      name: 'Rajesh Kumar',
+      role: 'CEO',
+      company: 'InnovateHub',
+      content: 'Best investment we made for our growing team. The analytics insights are game-changing.',
+      rating: 5
+    },
+    {
+      name: 'Priya Sharma',
+      role: 'Operations Manager',
+      company: 'GrowthCo',
+      content: 'User-friendly interface and powerful features. Our employees adapted quickly and love using it.',
+      rating: 5
+    }
+  ];
+
   useEffect(() => {
     const interval = setInterval(() => {
       setCurrentTestimonial((prev) => (prev + 1) % testimonials.length);
     }, 5000);
     return () => clearInterval(interval);
-  }, [testimonials.length]);
+  }, []);
 
   useEffect(() => {
     fetchDashboardStats();
@@ -175,30 +199,6 @@ export default function HomePage() {
       description: 'Dedicated success managers with average response time under 2 minutes',
       gradient: 'from-slate-600 to-gray-700',
       delay: '500ms'
-    }
-  ];
-
-  const testimonials = [
-    {
-      name: 'Sarah Johnson',
-      role: 'HR Director',
-      company: 'TechCorp India',
-      content: 'Tiranga IDMS transformed our HR operations completely. The automation features saved us 15+ hours weekly!',
-      rating: 5
-    },
-    {
-      name: 'Rajesh Kumar',
-      role: 'CEO',
-      company: 'InnovateHub',
-      content: 'Best investment we made for our growing team. The analytics insights are game-changing.',
-      rating: 5
-    },
-    {
-      name: 'Priya Sharma',
-      role: 'Operations Manager',
-      company: 'GrowthCo',
-      content: 'User-friendly interface and powerful features. Our employees adapted quickly and love using it.',
-      rating: 5
     }
   ];
 
