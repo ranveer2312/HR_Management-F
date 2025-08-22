@@ -6,9 +6,9 @@ import toast, { Toaster } from "react-hot-toast";
 import { Mail, Lock, UserCog, Store, Users } from "lucide-react";
 
 // Use NEXT_PUBLIC_API_URL if set, otherwise fallback to Render backend
-const APIURL =
-  process.env.NEXT_PUBLIC_API_URL || "https://hr-management-b.onrender.com";
-
+// const APIURL =
+//   process.env.NEXT_PUBLIC_API_URL || "https://hr-management-b.onrender.com";
+const APIURL ="https://hr-management-b.onrender.com"
 // ✅ Clear localStorage + remove authenticatedFetch
 function clearAuthData() {
   localStorage.removeItem("token");
