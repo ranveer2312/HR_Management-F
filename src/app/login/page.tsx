@@ -5,9 +5,10 @@ import { Lock, User, Eye, EyeOff, Shield } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import toast, { Toaster } from 'react-hot-toast';
-import { APIURL } from '@/constants/api';
 
- 
+// Updated API URL - you can also create a separate constants file
+const APIURL = process.env.NEXT_PUBLIC_API_URL || 'https://hr-management-b.onrender.com';
+
 interface FormData {
   email: string;
   password: string;
@@ -124,7 +125,9 @@ export default function LoginPage() {
     try {
       const apiUrl = loginAsEmployee
         ?  APIURL + '/api/employees/login'
-        : APIURL + `/api/auth/login`;
+        : APIURL + '/api/auth/login';
+        
+      console.log('Making request to:', apiUrl); // Debug log to verify URL
         
       const response = await fetch(apiUrl, {
         method: 'POST',
@@ -178,6 +181,8 @@ export default function LoginPage() {
       }
     } catch (e: Error | unknown) {
       // Handle network errors and other exceptions
+      console.error('Login error:', e); // Debug log
+      
       if (e instanceof TypeError && e.message.includes('fetch')) {
         toast.error('Network error. Please check your internet connection and try again.');
       } else if (e instanceof SyntaxError) {
