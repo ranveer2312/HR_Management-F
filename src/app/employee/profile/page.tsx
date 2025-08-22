@@ -72,7 +72,7 @@ interface ApiResponse<T> {
 }
 
 // API Configuration
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8080/api';
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://hr-management-b.onrender.com';
 const AUTH_TOKEN_KEY = 'auth_token';
 
 // Enhanced API Service with employee search and selection

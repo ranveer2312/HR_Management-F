@@ -53,7 +53,7 @@ interface ActivityItem {
 }
 
 // API Configuration
-const APIURL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+const APIURL = process.env.NEXT_PUBLIC_API_URL || 'http://:8080';
 
 // Work Hours Progress Ring Component (no changes needed)
 const WorkHoursRing = ({ hours = 0, targetHours = 8 }: { hours?: number; targetHours?: number }) => {
