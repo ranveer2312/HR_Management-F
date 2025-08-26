@@ -22,8 +22,8 @@ const nextConfig = {
       },
       {
         protocol: "https",
-        hostname: "res.cloudinary.com", // ✅ Added for Cloudinary
-        pathname: "/**",
+        hostname: "res.cloudinary.com", // ✅ Cloudinary rule
+        pathname: "/**", 
       },
     ],
     deviceSizes: [320, 640, 1024, 1920],
