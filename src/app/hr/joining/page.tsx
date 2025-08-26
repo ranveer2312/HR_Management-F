@@ -648,11 +648,13 @@ export default function JoiningPage() {
                       {selectedEmployee?.profilePhotoUrl ? (
                         <div className="w-32 h-32 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden relative">
                           <Image 
-                            src={selectedEmployee.profilePhotoUrl}
-                            alt={selectedEmployee.employeeName || 'Employee'} 
-                            fill
-                            className="object-cover" 
-                          />
+  src={selectedEmployee.profilePhotoUrl || '/default.png'}
+  alt={selectedEmployee.employeeName || 'Employee'} 
+  fill
+  className="object-cover"
+  unoptimized   // 👈 add this
+/>
+
                         </div>
                       ) : (
                         <div className="w-32 h-32 rounded-full bg-gray-200 flex items-center justify-center">
