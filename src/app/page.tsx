@@ -1,8 +1,5 @@
 'use client';
 
-
-
-
 import React, { useState, useEffect } from 'react';
 import { 
   Download, FileText, Presentation, Users, Building, Database, Store, UserCheck, DollarSign,
@@ -12,9 +9,6 @@ import {
 } from 'lucide-react';
 import { APIURL } from '@/constants/api';
 import toast, { Toaster } from 'react-hot-toast';
-
-
-
 
 export default function HomePage() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -28,9 +22,6 @@ export default function HomePage() {
     color: string;
   }
 
-
-
-
   const [stats, setStats] = useState<StatItem[]>([
     { number: '0', label: 'Total Employees', icon: Building, color: 'from-blue-600 to-indigo-700' },
     { number: '0', label: 'Active Today', icon: Shield, color: 'from-emerald-600 to-teal-700' },
@@ -39,9 +30,6 @@ export default function HomePage() {
   ]);
   const [loading, setLoading] = useState(true);
   const [backendConnected, setBackendConnected] = useState(false);
-
-
-
 
   // Fetch dashboard statistics
   const fetchDashboardStats = async () => {
@@ -58,17 +46,11 @@ export default function HomePage() {
         [key: string]: unknown;
       }
 
-
-
-
       interface Attendance {
         date: string;
         workHours?: number;
         [key: string]: unknown;
       }
-
-
-
 
       const employees: Employee[] = await employeesResponse.json();
       
@@ -117,17 +99,11 @@ export default function HomePage() {
     }
   };
 
-
-
-
   useEffect(() => {
     const handleScroll = () => setScrollY(window.scrollY);
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
-
-
-
 
   const testimonials = [
     {
@@ -153,25 +129,16 @@ export default function HomePage() {
     }
   ];
 
-
-
-
   useEffect(() => {
     const interval = setInterval(() => {
       setCurrentTestimonial((prev) => (prev + 1) % testimonials.length);
     }, 5000);
     return () => clearInterval(interval);
-  }, [testimonials.length]);
-
-
-
+  }, []);
 
   useEffect(() => {
     fetchDashboardStats();
   }, []);
-
-
-
 
   const handleRoleLogin = (role: string) => {
     console.log(`Selected role: ${role}`);
@@ -181,9 +148,6 @@ export default function HomePage() {
     window.location.href = '/login';
   };
 
-
-
-
   const scrollToSection = (sectionId: string) => {
     setActiveSection(sectionId);
     const element = document.getElementById(sectionId);
@@ -192,9 +156,6 @@ export default function HomePage() {
     }
     setIsMenuOpen(false);
   };
-
-
-
 
   const features = [
     {
@@ -240,15 +201,6 @@ export default function HomePage() {
       delay: '500ms'
     }
   ];
-
-
-
-
-
-
-
-
-
 
 
 
@@ -334,9 +286,6 @@ export default function HomePage() {
         )}
       </nav>
 
-
-
-
       {/* Hero Section - Light Background */}
       <section
         id="home"
@@ -413,9 +362,6 @@ export default function HomePage() {
               </button>
             </div>
 
-
-
-
             {/* Stats Row */}
             <div className="flex items-center justify-between mt-16 animate-slide-up delay-1000">
               <div className="grid grid-cols-2 md:grid-cols-4 gap-8 flex-1">
@@ -443,9 +389,6 @@ export default function HomePage() {
               </button>
             </div>
           </div>
-
-
-
 
           {/* Right Content - Hero Illustration */}
           <div className="relative animate-fade-in-right">
@@ -504,9 +447,6 @@ export default function HomePage() {
           </div>
         </div>
       </section>
-
-
-
 
       {/* About Section */}
       <section id="about" className="py-24 bg-white relative overflow-hidden">
@@ -593,9 +533,6 @@ export default function HomePage() {
           </div>
         </div>
       </section>
-
-
-
 
       {/* Services Section */}
       <section id="services" className="py-24 bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 relative overflow-hidden">
@@ -695,9 +632,6 @@ export default function HomePage() {
         </div>
       </section>
 
-
-
-
       {/* Testimonials Section */}
       <section className="py-24 bg-white">
         <div className="max-w-7xl mx-auto px-6">
@@ -750,9 +684,6 @@ export default function HomePage() {
           </div>
         </div>
       </section>
-
-
-
 
       {/* Resources */}
       <section id="resources" className="py-24 bg-gradient-to-br from-gray-50 to-indigo-50">
@@ -867,9 +798,6 @@ export default function HomePage() {
           </div>
         </div>
       </section>
-
-
-
 
       {/* Role-based Dashboard */}
       <section id="login" className="py-24 bg-white relative overflow-hidden">
@@ -988,9 +916,6 @@ export default function HomePage() {
           </div>
         </div>
       </section>
-
-
-
 
       {/* Professional Contact Section */}
       <section id="contact" className="py-24 bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-900 text-white relative overflow-hidden">
@@ -1112,9 +1037,6 @@ export default function HomePage() {
           </div>
         </div>
       </section>
-
-
-
 
       {/* Enhanced Footer */}
       <footer className="bg-gray-900 text-gray-300 py-16 relative overflow-hidden">
@@ -1257,14 +1179,8 @@ export default function HomePage() {
         </div>
       </footer>
 
-
-
-
       {/* Toast Notifications */}
       <Toaster position="top-right" />
-
-
-
 
       {/* Custom CSS for animations */}
       <style jsx>{`

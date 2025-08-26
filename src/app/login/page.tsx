@@ -1,20 +1,14 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import toast, { Toaster } from "react-hot-toast";
-import { Mail, Lock, UserCog, Users } from "lucide-react";
+import { Mail, Lock, UserCog, Store, Users } from "lucide-react";
 
 // Use NEXT_PUBLIC_API_URL if set, otherwise fallback to Render backend
 // const APIURL =
 //   process.env.NEXT_PUBLIC_API_URL || "https://hr-management-b.onrender.com";
-const APIURL = "https://hr-management-b.onrender.com";
-
-// Type for window with authenticatedFetch
-interface WindowWithAuth extends Window {
-  authenticatedFetch?: (url: string, options?: RequestInit) => Promise<Response>;
-}
-
+const APIURL ="https://hr-management-b.onrender.com"
 // ✅ Clear localStorage + remove authenticatedFetch
 function clearAuthData() {
   localStorage.removeItem("token");
@@ -23,7 +17,11 @@ function clearAuthData() {
   localStorage.removeItem("employeeId");
   localStorage.removeItem("employeeProfile");
 
-  delete (window as WindowWithAuth).authenticatedFetch;
+  delete (
+    window as unknown as {
+      authenticatedFetch?: (url: string, options?: RequestInit) => Promise<Response>;
+    }
+  ).authenticatedFetch;
 }
 
 // ✅ Authenticated fetch wrapper
@@ -43,8 +41,19 @@ export default function LoginPage() {
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
   const [loginAsEmployee, setLoginAsEmployee] = useState(false);
 
-  // ✅ Role-based redirect (moved to useCallback to fix dependency warning)
-  const redirectBasedOnRole = useCallback((roles: string, asEmployee: boolean) => {
+  // ✅ Restore session if token exists
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    const roles = localStorage.getItem("roles");
+    if (token && roles) {
+      (window as unknown as { authenticatedFetch?: any }).authenticatedFetch =
+        createAuthenticatedFetch(token);
+      redirectBasedOnRole(roles, loginAsEmployee);
+    }
+  }, []);
+
+  // ✅ Role-based redirect
+  const redirectBasedOnRole = (roles: string, asEmployee: boolean) => {
     const roleList = roles.split(",");
     if (roleList.includes("ADMIN")) router.replace("/admin");
     else if (roleList.includes("STORE")) router.replace("/store");
@@ -52,17 +61,7 @@ export default function LoginPage() {
     else if (roleList.includes("USER")) router.replace("/user");
     else if (asEmployee) router.replace("/employee");
     else router.replace("/dashboard");
-  }, [router]);
-
-  // ✅ Restore session if token exists
-  useEffect(() => {
-    const token = localStorage.getItem("token");
-    const roles = localStorage.getItem("roles");
-    if (token && roles) {
-      (window as WindowWithAuth).authenticatedFetch = createAuthenticatedFetch(token);
-      redirectBasedOnRole(roles, loginAsEmployee);
-    }
-  }, [loginAsEmployee, redirectBasedOnRole]);
+  };
 
   // ✅ Validate inputs
   const validateForm = () => {
@@ -112,7 +111,7 @@ export default function LoginPage() {
         if (data.profile) {
           localStorage.setItem("employeeProfile", JSON.stringify(data.profile));
         }
-        (window as WindowWithAuth).authenticatedFetch = createAuthenticatedFetch(data.token || "");
+        (window as any).authenticatedFetch = createAuthenticatedFetch(data.token || "");
         toast.success("Employee login successful!");
         router.replace("/employee");
         return;
@@ -128,7 +127,7 @@ export default function LoginPage() {
       localStorage.setItem("userEmail", data.email);
       localStorage.setItem("roles", data.roles);
 
-      (window as WindowWithAuth).authenticatedFetch = createAuthenticatedFetch(data.token);
+      (window as any).authenticatedFetch = createAuthenticatedFetch(data.token);
       toast.success("Login successful!");
       redirectBasedOnRole(data.roles, false);
     } catch (error) {
