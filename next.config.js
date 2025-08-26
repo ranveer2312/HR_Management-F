@@ -6,6 +6,7 @@ const nextConfig = {
       "localhost",
       "www.tirangaaerospace.com",
       "idmstiranga.online",
+      "res.cloudinary.com", // ✅ Added Cloudinary
     ],
     remotePatterns: [
       {
@@ -20,15 +21,12 @@ const nextConfig = {
         pathname: "/api/**",
       },
     ],
+    deviceSizes: [320, 640, 1024, 1920], // ✅ Added 1920 for your case
   },
   eslint: {
-    // ✅ Allows production builds to succeed
-    // even if there are ESLint errors
     ignoreDuringBuilds: true,
   },
   typescript: {
-    // ✅ Allows production builds to succeed
-    // even if there are TypeScript errors
     ignoreBuildErrors: true,
   },
 };
