@@ -2,9 +2,10 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, User, Mail, Lock, UserPlus, Shield } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
 import { APIURL } from '@/constants/api';
+
 
 interface RegisterFormData {
   username: string;
@@ -13,6 +14,7 @@ interface RegisterFormData {
   email: string;
   roles: string[];
 }
+
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -27,13 +29,16 @@ export default function RegisterPage() {
   const [passwordError, setPasswordError] = useState<string | null>(null);
   const [formErrors, setFormErrors] = useState<Partial<RegisterFormData & { password: string; username: string; fullName: string; email: string }>>({});
 
+
   const availableRoles = [
     'ADMIN',
     'STORE',
     'FINANCE',
     'HR',
     'DATA_MANAGER',
+   
   ];
+
 
   const handleRoleChange = (role: string) => {
     setFormData((prev) => ({
@@ -44,6 +49,7 @@ export default function RegisterPage() {
     }));
   };
 
+
   // Username validation
   function validateUsername(username: string): string | undefined {
     if (username.length < 3) return 'Username must be at least 3 characters.';
@@ -51,6 +57,7 @@ export default function RegisterPage() {
     if (!/^[a-zA-Z]+$/.test(username)) return 'Username can only contain letters (no numbers or special characters).';
     return undefined;
   }
+
 
   // Full Name validation
   function validateFullName(fullName: string): string | undefined {
@@ -60,6 +67,7 @@ export default function RegisterPage() {
     return undefined;
   }
 
+
   // Email validation
   function validateEmail(email: string): string | undefined {
     if (email.length < 6) return 'Email must be at least 6 characters.';
@@ -67,6 +75,7 @@ export default function RegisterPage() {
     // Optionally, add a regex for email format
     return undefined;
   }
+
 
   // Password validation (at least 8 chars, with upper, lower, number, special)
   function validatePassword(password: string): string | undefined {
@@ -78,10 +87,12 @@ export default function RegisterPage() {
     return undefined;
   }
 
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setFormErrors({});
+
 
     // Validate all fields
     const usernameError = validateUsername(formData.username);
@@ -89,11 +100,13 @@ export default function RegisterPage() {
     const emailError = validateEmail(formData.email);
     const pwdError = validatePassword(formData.password);
 
+
     const errors: Partial<RegisterFormData & { password: string; username: string; fullName: string; email: string }> = {};
     if (usernameError) errors.username = usernameError;
     if (fullNameError) errors.fullName = fullNameError;
     if (emailError) errors.email = emailError;
     if (pwdError) errors.password = pwdError;
+
 
     if (Object.keys(errors).length > 0) {
       setFormErrors(errors);
@@ -102,12 +115,14 @@ export default function RegisterPage() {
       return;
     }
 
+
     // Validate that at least one role is selected
     if (formData.roles.length === 0) {
       toast.error('Please select at least one role');
       setLoading(false);
       return;
     }
+
 
     try {
       const response = await fetch(APIURL +'/api/auth/register', {
@@ -117,6 +132,7 @@ export default function RegisterPage() {
         },
         body: JSON.stringify(formData),
       });
+
 
       // Check if response is JSON
       const contentType = response.headers.get('content-type');
@@ -135,7 +151,9 @@ export default function RegisterPage() {
         return;
       }
 
+
       const data = await response.json();
+
 
       if (response.ok) {
         toast.success('Account created successfully! Please log in.');
@@ -163,288 +181,165 @@ export default function RegisterPage() {
     }
   };
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 flex items-center justify-center p-4 relative overflow-hidden">
-      {/* Background decoration */}
-      <div className="absolute inset-0 bg-grid-slate-100 [mask-image:linear-gradient(0deg,white,rgba(255,255,255,0.6))] -z-10"></div>
-      <div className="absolute top-0 left-1/4 w-72 h-72 bg-blue-200 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob"></div>
-      <div className="absolute top-0 right-1/4 w-72 h-72 bg-purple-200 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-2000"></div>
-      <div className="absolute bottom-8 left-1/3 w-72 h-72 bg-pink-200 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-4000"></div>
 
-      <Toaster 
+  return (
+    <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+      <Toaster
         position="top-right"
         toastOptions={{
           duration: 4000,
           style: {
-            background: '#1f2937',
-            color: '#f9fafb',
-            border: '1px solid #374151',
-            borderRadius: '12px',
-            fontSize: '14px',
-            fontWeight: '500',
+            background: '#363636',
+            color: '#fff',
           },
           success: {
             duration: 3000,
             iconTheme: {
-              primary: '#10b981',
-              secondary: '#f9fafb',
+              primary: '#10B981',
+              secondary: '#fff',
             },
           },
           error: {
             duration: 5000,
             iconTheme: {
-              primary: '#ef4444',
-              secondary: '#f9fafb',
+              primary: '#EF4444',
+              secondary: '#fff',
             },
           },
         }}
       />
-      
-      <div className="bg-white/80 backdrop-blur-xl border border-white/20 rounded-3xl shadow-2xl w-full max-w-lg p-8 relative max-h-[95vh] overflow-y-auto scrollbar-hide">
-        {/* Subtle border glow */}
-        <div className="absolute inset-0 rounded-3xl bg-gradient-to-r from-blue-400/10 via-purple-400/10 to-pink-400/10 blur-sm -z-10"></div>
-        
-        {/* Back to Login Link */}
-        <Link 
-          href="/login" 
-          className="inline-flex items-center text-gray-600 hover:text-indigo-600 mb-6 font-medium transition-colors duration-200 group"
-        >
-          <ArrowLeft className="w-5 h-5 mr-2 group-hover:-translate-x-1 transition-transform duration-200" />
+      <div className="sm:mx-auto sm:w-full sm:max-w-md">
+        <Link href="/login" className="inline-flex items-center text-gray-600 hover:text-gray-900 mb-4">
+          <ArrowLeft className="w-5 h-5 mr-2" />
           Back to Login
         </Link>
+        <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
+          Create your account
+        </h2>
+      </div>
 
-        <div className="text-center mb-8">
-          <div className="bg-gradient-to-br from-indigo-500 to-purple-600 w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg shadow-indigo-500/25">
-            <UserPlus className="w-10 h-10 text-white" />
-          </div>
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent mb-3">
-            Create Account
-          </h1>
-          <p className="text-gray-600 font-medium">Join us and start your journey</p>
-        </div>
 
-        <form className="space-y-6" onSubmit={handleSubmit}>
-          {/* Username Field */}
-          <div className="space-y-2">
-            <label className="block text-sm font-semibold text-gray-700">Username</label>
-            <div className="relative group">
-              <User className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-indigo-500 transition-colors duration-200" />
-              <input
-                type="text"
-                placeholder="Enter username"
-                required
-                minLength={3}
-                maxLength={30}
-                pattern="[a-zA-Z]+"
-                value={formData.username}
-                onChange={(e) => {
-                  setFormData({ ...formData, username: e.target.value });
-                  const error = validateUsername(e.target.value);
-                  setFormErrors((prev) => ({ ...prev, username: error }));
-                }}
-                className={`w-full pl-12 pr-4 py-4 bg-gray-50/50 border ${
-                  formErrors.username 
-                    ? 'border-red-300 focus:border-red-500 focus:ring-red-500/20' 
-                    : 'border-gray-200 focus:border-indigo-500 focus:ring-indigo-500/20'
-                } rounded-xl focus:ring-4 transition-all duration-200 text-gray-900 placeholder-gray-500 font-medium`}
-              />
-            </div>
+      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
+        <div className="bg-white py-8 px-4 shadow-xl rounded-2xl sm:px-10">
+          <form className="space-y-6" onSubmit={handleSubmit}>
+            <input
+              type="text"
+              placeholder="Username"
+              required
+              minLength={3}
+              maxLength={30}
+              pattern="[a-zA-Z]+"
+              value={formData.username}
+              onChange={(e) => {
+                setFormData({ ...formData, username: e.target.value });
+                const error = validateUsername(e.target.value);
+                setFormErrors((prev) => ({ ...prev, username: error }));
+              }}
+              className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-xl shadow-sm focus:ring-blue-500 focus:border-blue-500"
+            />
             {formErrors.username && (
-              <p className="text-sm text-red-600 font-medium flex items-center gap-1 mt-2">
-                <span className="w-1 h-1 bg-red-600 rounded-full"></span>
-                {formErrors.username}
-              </p>
+              <p className="text-red-600 text-xs mt-1">{formErrors.username}</p>
             )}
-          </div>
 
-          {/* Full Name Field */}
-          <div className="space-y-2">
-            <label className="block text-sm font-semibold text-gray-700">Full Name</label>
-            <div className="relative group">
-              <User className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-indigo-500 transition-colors duration-200" />
-              <input
-                type="text"
-                placeholder="Enter full name"
-                required
-                minLength={3}
-                maxLength={30}
-                pattern="[a-zA-Z ]+"
-                value={formData.fullName}
-                onChange={(e) => {
-                  setFormData({ ...formData, fullName: e.target.value });
-                  const error = validateFullName(e.target.value);
-                  setFormErrors((prev) => ({ ...prev, fullName: error }));
-                }}
-                className={`w-full pl-12 pr-4 py-4 bg-gray-50/50 border ${
-                  formErrors.fullName 
-                    ? 'border-red-300 focus:border-red-500 focus:ring-red-500/20' 
-                    : 'border-gray-200 focus:border-indigo-500 focus:ring-indigo-500/20'
-                } rounded-xl focus:ring-4 transition-all duration-200 text-gray-900 placeholder-gray-500 font-medium`}
-              />
-            </div>
+
+            <input
+              type="text"
+              placeholder="Full Name"
+              required
+              minLength={3}
+              maxLength={30}
+              pattern="[a-zA-Z ]+"
+              value={formData.fullName}
+              onChange={(e) => {
+                setFormData({ ...formData, fullName: e.target.value });
+                const error = validateFullName(e.target.value);
+                setFormErrors((prev) => ({ ...prev, fullName: error }));
+              }}
+              className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-xl shadow-sm focus:ring-blue-500 focus:border-blue-500"
+            />
             {formErrors.fullName && (
-              <p className="text-sm text-red-600 font-medium flex items-center gap-1 mt-2">
-                <span className="w-1 h-1 bg-red-600 rounded-full"></span>
-                {formErrors.fullName}
-              </p>
+              <p className="text-red-600 text-xs mt-1">{formErrors.fullName}</p>
             )}
-          </div>
 
-          {/* Email Field */}
-          <div className="space-y-2">
-            <label className="block text-sm font-semibold text-gray-700">Email Address</label>
-            <div className="relative group">
-              <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-indigo-500 transition-colors duration-200" />
-              <input
-                type="email"
-                placeholder="Enter email address"
-                required
-                minLength={6}
-                maxLength={100}
-                value={formData.email}
-                onChange={(e) => {
-                  setFormData({ ...formData, email: e.target.value });
-                  const error = validateEmail(e.target.value);
-                  setFormErrors((prev) => ({ ...prev, email: error }));
-                }}
-                className={`w-full pl-12 pr-4 py-4 bg-gray-50/50 border ${
-                  formErrors.email 
-                    ? 'border-red-300 focus:border-red-500 focus:ring-red-500/20' 
-                    : 'border-gray-200 focus:border-indigo-500 focus:ring-indigo-500/20'
-                } rounded-xl focus:ring-4 transition-all duration-200 text-gray-900 placeholder-gray-500 font-medium`}
-              />
-            </div>
+
+            <input
+              type="email"
+              placeholder="Email"
+              required
+              minLength={6}
+              maxLength={100}
+              value={formData.email}
+              onChange={(e) => {
+                setFormData({ ...formData, email: e.target.value });
+                const error = validateEmail(e.target.value);
+                setFormErrors((prev) => ({ ...prev, email: error }));
+              }}
+              className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-xl shadow-sm focus:ring-blue-500 focus:border-blue-500"
+            />
             {formErrors.email && (
-              <p className="text-sm text-red-600 font-medium flex items-center gap-1 mt-2">
-                <span className="w-1 h-1 bg-red-600 rounded-full"></span>
-                {formErrors.email}
-              </p>
+              <p className="text-red-600 text-xs mt-1">{formErrors.email}</p>
             )}
-          </div>
 
-          {/* Password Field */}
-          <div className="space-y-2">
-            <label className="block text-sm font-semibold text-gray-700">Password</label>
-            <div className="relative group">
-              <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-indigo-500 transition-colors duration-200" />
-              <input
-                type="password"
-                placeholder="Create a strong password"
-                required
-                minLength={8}
-                value={formData.password}
-                onChange={(e) => {
-                  setFormData({ ...formData, password: e.target.value });
-                  const pwdErr = validatePassword(e.target.value);
-                  setPasswordError(pwdErr === undefined ? null : pwdErr);
-                  const error = validatePassword(e.target.value);
-                  setFormErrors((prev) => ({ ...prev, password: error }));
-                }}
-                className={`w-full pl-12 pr-4 py-4 bg-gray-50/50 border ${
-                  (formErrors.password || passwordError) 
-                    ? 'border-red-300 focus:border-red-500 focus:ring-red-500/20' 
-                    : 'border-gray-200 focus:border-indigo-500 focus:ring-indigo-500/20'
-                } rounded-xl focus:ring-4 transition-all duration-200 text-gray-900 placeholder-gray-500 font-medium`}
-              />
-            </div>
+
+            <input
+              type="password"
+              placeholder="Password"
+              required
+              minLength={8}
+              value={formData.password}
+              onChange={(e) => {
+                setFormData({ ...formData, password: e.target.value });
+                const pwdErr = validatePassword(e.target.value);
+                setPasswordError(pwdErr === undefined ? null : pwdErr);
+                const error = validatePassword(e.target.value);
+                setFormErrors((prev) => ({ ...prev, password: error }));
+              }}
+              className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-xl shadow-sm focus:ring-blue-500 focus:border-blue-500"
+            />
             {(formErrors.password || passwordError) && (
-              <p className="text-sm text-red-600 font-medium flex items-center gap-1 mt-2">
-                <span className="w-1 h-1 bg-red-600 rounded-full"></span>
-                {formErrors.password || passwordError}
-              </p>
+              <p className="text-red-600 text-xs mt-1">{formErrors.password || passwordError}</p>
             )}
-          </div>
 
-          {/* Roles Selection */}
-          <div className="space-y-4">
-            <div className="flex items-center space-x-2 mb-3">
-              <Shield className="w-5 h-5 text-indigo-600" />
-              <label className="text-sm font-semibold text-gray-700">Select Roles</label>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              {availableRoles.map((role) => (
-                <label 
-                  key={role} 
-                  className="flex items-center p-4 bg-gray-50/50 border border-gray-200 rounded-xl hover:bg-indigo-50/50 hover:border-indigo-200 cursor-pointer transition-all duration-200 group"
-                >
-                  <input
-                    type="checkbox"
-                    value={role}
-                    checked={formData.roles.includes(role)}
-                    onChange={() => handleRoleChange(role)}
-                    className="h-5 w-5 text-indigo-600 border-2 border-gray-300 rounded-md focus:ring-indigo-500 focus:ring-2 focus:ring-offset-0 mr-3"
-                  />
-                  <span className="text-sm font-medium text-gray-700 group-hover:text-indigo-700 transition-colors duration-200">
-                    {role.replace('_', ' ')}
-                  </span>
-                </label>
-              ))}
-            </div>
-          </div>
 
-          {/* Submit Button */}
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white py-4 px-6 rounded-xl font-semibold text-lg shadow-lg shadow-indigo-500/25 hover:shadow-xl hover:shadow-indigo-500/30 focus:ring-4 focus:ring-indigo-500/20 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-lg transform hover:-translate-y-0.5"
-          >
-            {loading ? (
-              <div className="flex items-center justify-center space-x-2">
-                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                <span>Creating Account...</span>
+            <fieldset>
+              <legend className="text-sm font-medium text-gray-700 mb-2">Select Roles</legend>
+              <div className="grid grid-cols-2 gap-3 mt-2">
+                {availableRoles.map((role) => (
+                  <label key={role} className="flex items-center p-2 border rounded-lg hover:bg-gray-50 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      value={role}
+                      checked={formData.roles.includes(role)}
+                      onChange={() => handleRoleChange(role)}
+                      className="mr-2 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    />
+                    <span className="text-sm text-gray-700">{role.replace('ROLE_', '')}</span>
+                  </label>
+                ))}
               </div>
-            ) : (
-              <span>Create Account</span>
-            )}
-          </button>
-        </form>
+            </fieldset>
 
-        {/* Sign In Link */}
-        <div className="mt-8 text-center">
-          <p className="text-gray-600 font-medium">
-            Already have an account?{' '}
-            <Link 
-              href="/login" 
-              className="text-indigo-600 hover:text-indigo-700 font-semibold hover:underline transition-colors duration-200"
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full flex justify-center py-2.5 px-4 border rounded-xl shadow-sm text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Sign In
+              {loading ? 'Creating account...' : 'Create account'}
+            </button>
+          </form>
+          <p className="mt-6 text-center text-sm text-gray-600">
+            Already have an account? {' '}
+            <Link href="/login" className="font-medium text-blue-600 hover:text-blue-500">
+              Log in
             </Link>
           </p>
         </div>
       </div>
-
-      <style jsx>{`
-        @keyframes blob {
-          0% {
-            transform: translate(0px, 0px) scale(1);
-          }
-          33% {
-            transform: translate(30px, -50px) scale(1.1);
-          }
-          66% {
-            transform: translate(-20px, 20px) scale(0.9);
-          }
-          100% {
-            transform: translate(0px, 0px) scale(1);
-          }
-        }
-        .animate-blob {
-          animation: blob 7s infinite;
-        }
-        .animation-delay-2000 {
-          animation-delay: 2s;
-        }
-        .animation-delay-4000 {
-          animation-delay: 4s;
-        }
-        .scrollbar-hide {
-          -ms-overflow-style: none;
-          scrollbar-width: none;
-        }
-        .scrollbar-hide::-webkit-scrollbar {
-          display: none;
-        }
-      `}</style>
     </div>
   );
 }
+
+
+
+
