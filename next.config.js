@@ -6,7 +6,7 @@ const nextConfig = {
       "localhost",
       "www.tirangaaerospace.com",
       "idmstiranga.online",
-      "res.cloudinary.com", // ✅ Added Cloudinary
+      "res.cloudinary.com", // ✅ Cloudinary allowed
     ],
     remotePatterns: [
       {
@@ -20,8 +20,13 @@ const nextConfig = {
         port: "8080",
         pathname: "/api/**",
       },
+      {
+        protocol: "https",
+        hostname: "res.cloudinary.com", // ✅ Added for Cloudinary
+        pathname: "/**",
+      },
     ],
-    deviceSizes: [320, 640, 1024, 1920], // ✅ Added 1920 for your case
+    deviceSizes: [320, 640, 1024, 1920],
   },
   eslint: {
     ignoreDuringBuilds: true,
