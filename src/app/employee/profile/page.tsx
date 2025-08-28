@@ -1,7 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import Image from 'next/image';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   User,
   Briefcase,
@@ -22,7 +21,8 @@ import {
   RefreshCw,
   Search,
   ChevronDown,
-  Users
+  Users,
+  Calendar,
 } from 'lucide-react';
 
 interface Employee {
@@ -72,7 +72,7 @@ interface ApiResponse<T> {
 }
 
 // API Configuration
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://hr-management-b.onrender.com';
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8080/api';
 const AUTH_TOKEN_KEY = 'auth_token';
 
 // Enhanced API Service with employee search and selection
@@ -366,10 +366,34 @@ export default function EmployeeProfilePage() {
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const [uploadingPhoto, setUploadingPhoto] = useState<boolean>(false);
 
-  // Create apiService instance only once using useMemo
-  const apiService = useMemo(() => new ApiService(API_BASE_URL), []);
+  const apiService = new ApiService(API_BASE_URL);
 
-  const loadEmployees = useCallback(async () => {
+  // Load employees on component mount
+  useEffect(() => {
+    loadEmployees();
+  }, []);
+
+  // Load employee profile when selection changes
+  useEffect(() => {
+    if (selectedEmployeeId) {
+      loadEmployeeData(selectedEmployeeId);
+      // Remember selection in localStorage
+      localStorage?.setItem('currentEmployeeId', selectedEmployeeId);
+    }
+  }, [selectedEmployeeId]);
+
+  // Restore last selected employee from localStorage
+  useEffect(() => {
+    const lastSelectedId = localStorage?.getItem('currentEmployeeId');
+    if (lastSelectedId && employees.length > 0 && !selectedEmployeeId) {
+      const employeeExists = employees.some(emp => emp.employeeId === lastSelectedId);
+      if (employeeExists) {
+        setSelectedEmployeeId(lastSelectedId);
+      }
+    }
+  }, [employees, selectedEmployeeId]);
+
+  const loadEmployees = async () => {
     try {
       setEmployeesLoading(true);
       setError(null);
@@ -392,9 +416,9 @@ export default function EmployeeProfilePage() {
     } finally {
       setEmployeesLoading(false);
     }
-  }, [apiService, selectedEmployeeId]);
+  };
 
-  const loadEmployeeData = useCallback(async (employeeId: string) => {
+  const loadEmployeeData = async (employeeId: string) => {
     try {
       setLoading(true);
       setError(null);
@@ -434,32 +458,7 @@ export default function EmployeeProfilePage() {
     } finally {
       setLoading(false);
     }
-  }, [apiService]);
-
-  // Load employees on component mount
-  useEffect(() => {
-    loadEmployees();
-  }, [loadEmployees]);
-
-  // Load employee profile when selection changes
-  useEffect(() => {
-    if (selectedEmployeeId) {
-      loadEmployeeData(selectedEmployeeId);
-      // Remember selection in localStorage
-      localStorage?.setItem('currentEmployeeId', selectedEmployeeId);
-    }
-  }, [selectedEmployeeId, loadEmployeeData]);
-
-  // Restore last selected employee from localStorage
-  useEffect(() => {
-    const lastSelectedId = localStorage?.getItem('currentEmployeeId');
-    if (lastSelectedId && employees.length > 0 && !selectedEmployeeId) {
-      const employeeExists = employees.some(emp => emp.employeeId === lastSelectedId);
-      if (employeeExists) {
-        setSelectedEmployeeId(lastSelectedId);
-      }
-    }
-  }, [employees, selectedEmployeeId]);
+  };
 
   const handleEmployeeSelect = (employeeId: string) => {
     setSelectedEmployeeId(employeeId);
@@ -645,61 +644,7 @@ export default function EmployeeProfilePage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Top Header */}
-      <div className="bg-gradient-to-r from-blue-600 to-purple-600 px-6 py-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
-              <Building className="w-6 h-6 text-white" />
-            </div>
-            <div>
-              <h1 className="text-white text-xl font-bold">Employee Portal</h1>
-              <p className="text-white/80 text-sm">Self Service Dashboard</p>
-            </div>
-            
-            {/* Employee Selector */}
-            <EmployeeSelector
-              employees={employees}
-              selectedEmployeeId={selectedEmployeeId}
-              onEmployeeSelect={handleEmployeeSelect}
-              loading={employeesLoading}
-            />
-          </div>
-          
-          <div className="flex items-center space-x-4">
-            {employee && (
-              <div className="flex items-center space-x-3 text-white">
-                <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
-                  <span className="text-white font-medium text-sm">
-                    {employee.employeeName.split(' ').map(n => n[0]).join('').toUpperCase()}
-                  </span>
-                </div>
-                <div>
-                  <p className="text-sm font-medium">{employee.employeeName}</p>
-                  <p className="text-xs text-white/80">{employee.position}</p>
-                </div>
-              </div>
-            )}
-            
-            <button 
-              onClick={handleRefresh}
-              disabled={refreshing}
-              className="px-3 py-2 bg-white/20 text-white rounded-lg border border-white/20 hover:bg-white/30 transition-colors disabled:opacity-50"
-              title="Refresh data"
-            >
-              <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
-            </button>
-            
-            <button 
-              onClick={handleLogout}
-              className="px-4 py-2 bg-white/20 text-white rounded-lg border border-white/20 hover:bg-white/30 transition-colors"
-            >
-              <LogOut className="w-4 h-4 mr-2" />
-              Logout
-            </button>
-          </div>
-        </div>
-      </div>
+     
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto p-6">
@@ -795,13 +740,10 @@ export default function EmployeeProfilePage() {
                       <div className="relative inline-block mb-4">
                         <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-white shadow-md mx-auto bg-gray-200">
                           {employee.profilePhotoUrl ? (
-                            <Image
+                            <img
                               src={employee.profilePhotoUrl}
-                              alt={`${employee.employeeName} profile photo`}
-                              width={96}
-                              height={96}
+                              alt="Profile"
                               className="w-full h-full object-cover"
-                              priority
                             />
                           ) : (
                             <div className="w-full h-full flex items-center justify-center bg-blue-100 text-blue-600 text-2xl font-bold">
@@ -838,20 +780,7 @@ export default function EmployeeProfilePage() {
                       <p className="text-blue-600 font-semibold text-sm mb-1">{employee.position}</p>
                       <p className="text-gray-500 text-sm mb-4">{employee.department}</p>
                       
-                      <div className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
-                        employee.status === 'active' ? 'bg-green-100 text-green-800' :
-                        employee.status === 'inactive' ? 'bg-yellow-100 text-yellow-800' :
-                        'bg-red-100 text-red-800'
-                      }`}>
-                        <div className={`w-2 h-2 rounded-full mr-2 ${
-                          employee.status === 'active' ? 'bg-green-500' :
-                          employee.status === 'inactive' ? 'bg-yellow-500' :
-                          'bg-red-500'
-                        }`}></div>
-                        {employee.status === 'active' ? 'Active Employee' :
-                         employee.status === 'inactive' ? 'Inactive Employee' :
-                         'Terminated Employee'}
-                      </div>
+                      
                     </div>
 
                     <div className="space-y-4 text-sm">
@@ -1255,22 +1184,6 @@ export default function EmployeeProfilePage() {
                 </div>
               </div>
 
-              {/* Connection Status Footer */}
-              <div className="mt-8 p-4 bg-gray-50 rounded-lg border border-gray-200">
-                <div className="flex items-center justify-between text-sm">
-                  <div className="flex items-center space-x-2">
-                    <div className={`w-2 h-2 rounded-full ${error ? 'bg-red-500' : 'bg-green-500'}`}></div>
-                    <span className="text-gray-600">
-                      {error ? 'Connection Error' : 'Connected to Backend'}
-                    </span>
-                  </div>
-                  <div className="text-xs text-gray-500 flex items-center space-x-4">
-                    <span>API: {API_BASE_URL}</span>
-                    <span>Employees: {employees.length}</span>
-                    {selectedEmployeeId && <span>Selected: {selectedEmployeeId}</span>}
-                  </div>
-                </div>
-              </div>
             </div>
           </div>
         )}
