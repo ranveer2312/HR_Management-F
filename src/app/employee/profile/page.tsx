@@ -967,3 +967,6 @@ export default function EmployeeProfilePage() {
     </div>
   );
 }
+
+
+// Export the EmployeeSelector component
