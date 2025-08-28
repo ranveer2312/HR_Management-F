@@ -47,7 +47,7 @@ interface ApiResponse<T> {
 }
 
 // API Configuration
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://hr-management-b.onrender.com';
 
 // Enhanced API Service
 class ApiService {
