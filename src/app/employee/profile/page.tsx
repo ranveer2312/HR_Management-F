@@ -8,7 +8,6 @@ import {
   Phone,
   MapPin,
   Building,
-  GraduationCap,
   Edit,
   Camera,
   Save,
@@ -30,38 +29,18 @@ interface Employee {
   employeeId: string;
   employeeName: string;
   email: string;
-  phone: string;
+  phoneNumber: string;
+  bloodGroup: string;
+  profilePhotoUrl?: string;
+  profilePhotoPublicId?: string;
+  currentAddress: string;
+  permanentAddress: string;
+  password?: string;
   position: string;
   department: string;
-  dateOfBirth: string;
-  dateOfJoining: string;
-  salary: number;
-  address: string;
-  city: string;
-  state: string;
-  country: string;
-  postalCode: string;
-  emergencyContact: string;
-  emergencyPhone: string;
-  bloodGroup: string;
-  maritalStatus: string;
-  education: string;
-  experience: number;
-  skills: string;
-  profilePhotoUrl?: string;
-  status: 'active' | 'inactive' | 'terminated';
-  managerId?: string;
-  managerName?: string;
-}
-
-interface AttendanceStats {
-  totalDays: number;
-  presentDays: number;
-  absentDays: number;
-  lateDays: number;
-  halfDays: number;
-  averageWorkHours: number;
-  totalWorkHours: number;
+  joiningDate: string;
+  relievingDate?: string;
+  status: string; // Joining, Active, Relieving
 }
 
 interface ApiResponse<T> {
@@ -171,19 +150,6 @@ class ApiService {
     });
     
     return this.handleResponse<Employee>(response);
-  }
-
-  async getAttendanceStats(employeeId: string, month?: string, year?: string): Promise<ApiResponse<AttendanceStats>> {
-    const params = new URLSearchParams();
-    if (month) params.append('month', month);
-    if (year) params.append('year', year);
-    
-    const response = await fetch(`${this.baseURL}/employees/${employeeId}/attendance/stats?${params.toString()}`, {
-      method: 'GET',
-      headers: this.getHeaders(),
-    });
-    
-    return this.handleResponse<AttendanceStats>(response);
   }
 
   async uploadProfilePhoto(employeeId: string, file: File): Promise<ApiResponse<{ profilePhotoUrl: string }>> {
@@ -332,7 +298,7 @@ function EmployeeSelector({
                       {employee.department} • {employee.email}
                     </p>
                   </div>
-                  {employee.status === 'active' && (
+                  {employee.status === 'Active' && (
                     <div className="w-2 h-2 bg-green-500 rounded-full"></div>
                   )}
                 </button>
@@ -356,7 +322,6 @@ export default function EmployeeProfilePage() {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string | null>(null);
   const [employee, setEmployee] = useState<Employee | null>(null);
-  const [attendanceStats, setAttendanceStats] = useState<AttendanceStats | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [employeesLoading, setEmployeesLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
@@ -433,25 +398,6 @@ export default function EmployeeProfilePage() {
         setError(profileResponse.error || 'Failed to load profile');
       }
 
-      // Load attendance stats (optional)
-      try {
-        const currentDate = new Date();
-        const currentMonth = (currentDate.getMonth() + 1).toString();
-        const currentYear = currentDate.getFullYear().toString();
-        
-        const attendanceResponse = await apiService.getAttendanceStats(
-          employeeId, 
-          currentMonth, 
-          currentYear
-        );
-        
-        if (attendanceResponse.success) {
-          setAttendanceStats(attendanceResponse.data);
-        }
-      } catch (attendanceError) {
-        console.warn('Attendance stats not available:', attendanceError);
-      }
-
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An unexpected error occurred');
       console.error('Error loading employee data:', err);
@@ -463,7 +409,6 @@ export default function EmployeeProfilePage() {
   const handleEmployeeSelect = (employeeId: string) => {
     setSelectedEmployeeId(employeeId);
     setEmployee(null); // Clear current employee while loading
-    setAttendanceStats(null);
     setIsEditing(false);
   };
 
@@ -569,21 +514,9 @@ export default function EmployeeProfilePage() {
     });
   };
 
-  const calculateAge = (dateOfBirth: string) => {
-    if (!dateOfBirth) return 'Not specified';
-    const birthDate = new Date(dateOfBirth);
-    const today = new Date();
-    let age = today.getFullYear() - birthDate.getFullYear();
-    const monthDiff = today.getMonth() - birthDate.getMonth();
-    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
-      age--;
-    }
-    return age + ' years';
-  };
-
-  const calculateExperience = (dateOfJoining: string) => {
-    if (!dateOfJoining) return 'Not specified';
-    const joinDate = new Date(dateOfJoining);
+  const calculateExperience = (joiningDate: string) => {
+    if (!joiningDate) return 'Not specified';
+    const joinDate = new Date(joiningDate);
     const today = new Date();
     let years = today.getFullYear() - joinDate.getFullYear();
     let months = today.getMonth() - joinDate.getMonth();
@@ -599,6 +532,15 @@ export default function EmployeeProfilePage() {
       return `${years} year${years !== 1 ? 's' : ''}`;
     } else {
       return `${years} year${years !== 1 ? 's' : ''} ${months} month${months !== 1 ? 's' : ''}`;
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status?.toLowerCase()) {
+      case 'active': return 'bg-green-100 text-green-800';
+      case 'joining': return 'bg-blue-100 text-blue-800';
+      case 'relieving': return 'bg-yellow-100 text-yellow-800';
+      default: return 'bg-gray-100 text-gray-800';
     }
   };
 
@@ -644,7 +586,37 @@ export default function EmployeeProfilePage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-     
+      {/* Header */}
+      <div className="bg-white border-b border-gray-200 px-6 py-4">
+        <div className="max-w-7xl mx-auto flex items-center justify-between">
+          <div className="flex items-center space-x-4">
+            <h1 className="text-xl font-semibold text-gray-900">Employee Management</h1>
+            <EmployeeSelector
+              employees={employees}
+              selectedEmployeeId={selectedEmployeeId}
+              onEmployeeSelect={handleEmployeeSelect}
+              loading={employeesLoading}
+            />
+          </div>
+          <div className="flex items-center space-x-3">
+            <button
+              onClick={handleRefresh}
+              disabled={refreshing}
+              className="flex items-center space-x-2 px-3 py-2 text-gray-700 hover:text-blue-600 transition-colors"
+              title="Refresh data"
+            >
+              <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
+            </button>
+            <button
+              onClick={handleLogout}
+              className="flex items-center space-x-2 px-3 py-2 text-gray-700 hover:text-red-600 transition-colors"
+              title="Logout"
+            >
+              <LogOut className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      </div>
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto p-6">
@@ -753,8 +725,8 @@ export default function EmployeeProfilePage() {
                         </div>
                         
                         {/* Status indicator */}
-                        <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-green-500 rounded-full border-2 border-white flex items-center justify-center">
-                          <CheckCircle className="w-3 h-3 text-white" />
+                        <div className={`absolute -bottom-1 -right-1 px-2 py-1 text-xs font-medium rounded-full border-2 border-white ${getStatusColor(employee.status)}`}>
+                          {employee.status}
                         </div>
                         
                         {/* Photo upload button */}
@@ -779,8 +751,6 @@ export default function EmployeeProfilePage() {
                       <h2 className="text-xl font-bold text-gray-900 mb-1">{employee.employeeName}</h2>
                       <p className="text-blue-600 font-semibold text-sm mb-1">{employee.position}</p>
                       <p className="text-gray-500 text-sm mb-4">{employee.department}</p>
-                      
-                      
                     </div>
 
                     <div className="space-y-4 text-sm">
@@ -795,7 +765,7 @@ export default function EmployeeProfilePage() {
                         <Phone className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" />
                         <div>
                           <p className="text-gray-600 text-xs">Phone</p>
-                          <p className="text-gray-900 font-medium">{employee.phone}</p>
+                          <p className="text-gray-900 font-medium">{employee.phoneNumber}</p>
                         </div>
                       </div>
                       <div className="flex items-start space-x-3">
@@ -807,45 +777,6 @@ export default function EmployeeProfilePage() {
                       </div>
                     </div>
                   </div>
-
-                  {/* Attendance Summary */}
-                  {attendanceStats && (
-                    <div className="bg-gray-50 rounded-xl p-6">
-                      <div className="flex items-center justify-between mb-4">
-                        <h3 className="text-lg font-semibold text-gray-900">Attendance Summary</h3>
-                        <span className="text-xs text-gray-500">Current Month</span>
-                      </div>
-                      <div className="space-y-4">
-                        <div className="text-center">
-                          <div className="text-3xl font-bold text-gray-900 mb-1">{attendanceStats.totalDays}</div>
-                          <div className="text-sm text-gray-600">Total Working Days</div>
-                        </div>
-                        <div className="space-y-3">
-                          <div className="flex justify-between items-center">
-                            <span className="text-gray-600 text-sm">Present</span>
-                            <div className="flex items-center space-x-2">
-                              <span className="font-semibold text-green-600">{attendanceStats.presentDays}</span>
-                              <span className="text-xs text-green-600 bg-green-50 px-2 py-1 rounded">
-                                ({Math.round((attendanceStats.presentDays / attendanceStats.totalDays) * 100)}%)
-                              </span>
-                            </div>
-                          </div>
-                          <div className="flex justify-between items-center">
-                            <span className="text-gray-600 text-sm">Absent</span>
-                            <span className="font-semibold text-red-600">{attendanceStats.absentDays}</span>
-                          </div>
-                          <div className="flex justify-between items-center">
-                            <span className="text-gray-600 text-sm">Late</span>
-                            <span className="font-semibold text-amber-600">{attendanceStats.lateDays}</span>
-                          </div>
-                          <div className="flex justify-between items-center pt-3 border-t border-gray-200">
-                            <span className="text-gray-600 text-sm">Avg. Hours/Day</span>
-                            <span className="font-semibold text-blue-600">{attendanceStats.averageWorkHours}h</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
                 </div>
 
                 {/* Information Sections */}
@@ -874,19 +805,6 @@ export default function EmployeeProfilePage() {
                           )}
                         </div>
                         <div>
-                          <label className="block text-sm font-medium text-gray-500 mb-1">Date of Birth</label>
-                          {isEditing ? (
-                            <input
-                              type="date"
-                              value={editFormData.dateOfBirth || ''}
-                              onChange={(e) => handleInputChange('dateOfBirth', e.target.value)}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                            />
-                          ) : (
-                            <p className="text-gray-900">{formatDate(employee.dateOfBirth)} ({calculateAge(employee.dateOfBirth)})</p>
-                          )}
-                        </div>
-                        <div>
                           <label className="block text-sm font-medium text-gray-500 mb-1">Email Address</label>
                           {isEditing ? (
                             <input
@@ -904,12 +822,12 @@ export default function EmployeeProfilePage() {
                           {isEditing ? (
                             <input
                               type="tel"
-                              value={editFormData.phone || ''}
-                              onChange={(e) => handleInputChange('phone', e.target.value)}
+                              value={editFormData.phoneNumber || ''}
+                              onChange={(e) => handleInputChange('phoneNumber', e.target.value)}
                               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                             />
                           ) : (
-                            <p className="text-gray-900">{employee.phone}</p>
+                            <p className="text-gray-900">{employee.phoneNumber}</p>
                           )}
                         </div>
                         <div>
@@ -932,24 +850,6 @@ export default function EmployeeProfilePage() {
                             </select>
                           ) : (
                             <span className="inline-flex px-2 py-1 bg-red-50 text-red-700 rounded text-sm font-medium">{employee.bloodGroup}</span>
-                          )}
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-500 mb-1">Marital Status</label>
-                          {isEditing ? (
-                            <select
-                              value={editFormData.maritalStatus || ''}
-                              onChange={(e) => handleInputChange('maritalStatus', e.target.value)}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                            >
-                              <option value="">Select Status</option>
-                              <option value="Single">Single</option>
-                              <option value="Married">Married</option>
-                              <option value="Divorced">Divorced</option>
-                              <option value="Widowed">Widowed</option>
-                            </select>
-                          ) : (
-                            <p className="text-gray-900">{employee.maritalStatus}</p>
                           )}
                         </div>
                       </div>
@@ -994,188 +894,64 @@ export default function EmployeeProfilePage() {
                         </div>
                         <div>
                           <label className="block text-sm font-medium text-gray-500 mb-1">Date of Joining</label>
-                          <p className="text-gray-900">{formatDate(employee.dateOfJoining)}</p>
+                          <p className="text-gray-900">{formatDate(employee.joiningDate)}</p>
                         </div>
                         <div>
                           <label className="block text-sm font-medium text-gray-500 mb-1">Experience with Company</label>
-                          <p className="text-gray-900">{calculateExperience(employee.dateOfJoining)}</p>
+                          <p className="text-gray-900">{calculateExperience(employee.joiningDate)}</p>
                         </div>
                         <div>
-                          <label className="block text-sm font-medium text-gray-500 mb-1">Annual Salary</label>
-                          <p className="text-gray-900 font-semibold">₹{employee.salary?.toLocaleString('en-IN')}</p>
+                          <label className="block text-sm font-medium text-gray-500 mb-1">Status</label>
+                          <span className={`inline-flex px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(employee.status)}`}>
+                            {employee.status}
+                          </span>
                         </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-500 mb-1">Reporting Manager</label>
-                          <p className="text-gray-900">{employee.managerName || 'Not assigned'}</p>
-                        </div>
-                        <div className="col-span-2">
-                          <label className="block text-sm font-medium text-gray-500 mb-1">Skills</label>
-                          {isEditing ? (
-                            <textarea
-                              value={editFormData.skills || ''}
-                              onChange={(e) => handleInputChange('skills', e.target.value)}
-                              rows={3}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                              placeholder="Enter skills separated by commas"
-                            />
-                          ) : (
-                            <div className="flex flex-wrap gap-2">
-                              {employee.skills?.split(',').map((skill, index) => (
-                                <span key={index} className="px-2 py-1 bg-blue-50 text-blue-700 rounded text-sm">
-                                  {skill.trim()}
-                                </span>
-                              ))}
-                            </div>
-                          )}
-                        </div>
+                        {employee.relievingDate && (
+                          <div>
+                            <label className="block text-sm font-medium text-gray-500 mb-1">Relieving Date</label>
+                            <p className="text-gray-900">{formatDate(employee.relievingDate)}</p>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
 
-                  {/* Address & Emergency Contact */}
+                  {/* Address Information */}
                   <div className="bg-white border border-gray-200 rounded-lg">
                     <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
                       <div className="flex items-center">
                         <MapPin className="w-5 h-5 text-blue-600 mr-3" />
-                        <h3 className="text-lg font-semibold text-gray-900">Address & Emergency Contact</h3>
+                        <h3 className="text-lg font-semibold text-gray-900">Address Information</h3>
                       </div>
                     </div>
                     <div className="p-6">
-                      <div className="grid grid-cols-2 gap-6">
-                        <div className="col-span-2">
+                      <div className="space-y-6">
+                        <div>
                           <label className="block text-sm font-medium text-gray-500 mb-1">Current Address</label>
                           {isEditing ? (
                             <textarea
-                              value={editFormData.address || ''}
-                              onChange={(e) => handleInputChange('address', e.target.value)}
-                              rows={2}
+                              value={editFormData.currentAddress || ''}
+                              onChange={(e) => handleInputChange('currentAddress', e.target.value)}
+                              rows={3}
                               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                              placeholder="Enter current address"
                             />
                           ) : (
-                            <p className="text-gray-900">{employee.address}</p>
+                            <p className="text-gray-900">{employee.currentAddress || 'Not specified'}</p>
                           )}
                         </div>
                         <div>
-                          <label className="block text-sm font-medium text-gray-500 mb-1">City</label>
-                          {isEditing ? (
-                            <input
-                              type="text"
-                              value={editFormData.city || ''}
-                              onChange={(e) => handleInputChange('city', e.target.value)}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                            />
-                          ) : (
-                            <p className="text-gray-900">{employee.city}</p>
-                          )}
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-500 mb-1">State</label>
-                          {isEditing ? (
-                            <input
-                              type="text"
-                              value={editFormData.state || ''}
-                              onChange={(e) => handleInputChange('state', e.target.value)}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                            />
-                          ) : (
-                            <p className="text-gray-900">{employee.state}</p>
-                          )}
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-500 mb-1">Country</label>
-                          {isEditing ? (
-                            <input
-                              type="text"
-                              value={editFormData.country || ''}
-                              onChange={(e) => handleInputChange('country', e.target.value)}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                            />
-                          ) : (
-                            <p className="text-gray-900">{employee.country}</p>
-                          )}
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-500 mb-1">Postal Code</label>
-                          {isEditing ? (
-                            <input
-                              type="text"
-                              value={editFormData.postalCode || ''}
-                              onChange={(e) => handleInputChange('postalCode', e.target.value)}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                            />
-                          ) : (
-                            <p className="text-gray-900">{employee.postalCode}</p>
-                          )}
-                        </div>
-                        <div className="col-span-2 pt-4 border-t border-gray-100">
-                          <h4 className="text-md font-medium text-gray-900 mb-3">Emergency Contact</h4>
-                          <div className="grid grid-cols-2 gap-4">
-                            <div>
-                              <label className="block text-sm font-medium text-gray-500 mb-1">Contact Name</label>
-                              {isEditing ? (
-                                <input
-                                  type="text"
-                                  value={editFormData.emergencyContact || ''}
-                                  onChange={(e) => handleInputChange('emergencyContact', e.target.value)}
-                                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                />
-                              ) : (
-                                <p className="text-gray-900">{employee.emergencyContact}</p>
-                              )}
-                            </div>
-                            <div>
-                              <label className="block text-sm font-medium text-gray-500 mb-1">Contact Phone</label>
-                              {isEditing ? (
-                                <input
-                                  type="tel"
-                                  value={editFormData.emergencyPhone || ''}
-                                  onChange={(e) => handleInputChange('emergencyPhone', e.target.value)}
-                                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                />
-                              ) : (
-                                <p className="text-gray-900">{employee.emergencyPhone}</p>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Education & Experience */}
-                  <div className="bg-white border border-gray-200 rounded-lg">
-                    <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
-                      <div className="flex items-center">
-                        <GraduationCap className="w-5 h-5 text-blue-600 mr-3" />
-                        <h3 className="text-lg font-semibold text-gray-900">Education & Experience</h3>
-                      </div>
-                    </div>
-                    <div className="p-6">
-                      <div className="grid grid-cols-2 gap-6">
-                        <div>
-                          <label className="block text-sm font-medium text-gray-500 mb-1">Education</label>
+                          <label className="block text-sm font-medium text-gray-500 mb-1">Permanent Address</label>
                           {isEditing ? (
                             <textarea
-                              value={editFormData.education || ''}
-                              onChange={(e) => handleInputChange('education', e.target.value)}
-                              rows={2}
+                              value={editFormData.permanentAddress || ''}
+                              onChange={(e) => handleInputChange('permanentAddress', e.target.value)}
+                              rows={3}
                               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                              placeholder="Enter permanent address"
                             />
                           ) : (
-                            <p className="text-gray-900">{employee.education}</p>
-                          )}
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-500 mb-1">Years of Experience</label>
-                          {isEditing ? (
-                            <input
-                              type="number"
-                              value={editFormData.experience || ''}
-                              onChange={(e) => handleInputChange('experience', parseInt(e.target.value))}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                            />
-                          ) : (
-                            <p className="text-gray-900">{employee.experience} years</p>
+                            <p className="text-gray-900">{employee.permanentAddress || 'Not specified'}</p>
                           )}
                         </div>
                       </div>
