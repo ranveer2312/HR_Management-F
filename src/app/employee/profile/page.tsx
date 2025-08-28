@@ -47,7 +47,7 @@ interface ApiResponse<T> {
 }
 
 // API Configuration
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://hr-management-b.onrender.com';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://hr-management-b.onrender.com/api';
 
 // Enhanced API Service
 class ApiService {
