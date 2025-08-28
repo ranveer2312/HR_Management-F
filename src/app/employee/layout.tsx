@@ -1,13 +1,14 @@
 'use client';
 import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
-import axios, { AxiosError } from 'axios';
+import axios from 'axios';
 import Link from 'next/link';
-import Image from 'next/image';
 import {
-  Calendar, FileText, Clock, Briefcase, Star,
-  BookOpen, Laptop, User, LogOut, LayoutDashboard, BarChart2, ChevronRight, StickyNote, Sun, CloudSun,
-  Moon, RefreshCw
+  Calendar, FileText, Clock, Mail, Phone, MapPin, Briefcase, Star,
+  BookOpen, Laptop, User, LogOut, LayoutDashboard, HelpCircle,
+  Settings, Timer, BarChart2, ChevronRight, StickyNote, Sun, CloudSun,
+  Moon, RefreshCw, ArrowRight, Activity, BellOff, TrendingUp, Award,
+  Shield, Zap
 } from 'lucide-react';
 
 // Interfaces for data types
@@ -34,15 +35,7 @@ interface TodayAttendance {
   workHours: number;
 }
 
-interface AttendanceRecord {
-  date: string[] | string;
-  checkInTime: string | null;
-  checkOutTime: string | null;
-  status: string;
-  workHours: number;
-}
-
-const APIURL = process.env.NEXT_PUBLIC_API_URL || 'https://hr-management-b.onrender.com';
+const APIURL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
 
 type NavItemProps = { icon: React.ReactNode; label: string; href?: string; active?: boolean; hasNotification?: boolean };
 const NavItem = ({ icon, label, href = "#", active = false, hasNotification = false }: NavItemProps) => (
@@ -122,11 +115,9 @@ const Sidebar = ({ employee, profilePhoto, onLogout }: SidebarProps) => {
       <div className="p-6 border-t border-slate-200/60">
         <div className="flex items-center space-x-3 p-4 rounded-2xl bg-gradient-to-r from-slate-50 to-blue-50 border border-slate-200 backdrop-blur-sm">
           {profilePhoto ? (
-            <Image
+            <img
               src={profilePhoto}
               alt={employee?.employeeName || "User"}
-              width={48}
-              height={48}
               className="w-12 h-12 rounded-full object-cover border-2 border-blue-400/60 shadow-lg"
             />
           ) : (
@@ -267,19 +258,27 @@ export default function EmployeeLayout({
     try {
       const [employeeRes, attendanceRes] = await Promise.all([
         axios.get(`${APIURL}/api/employees/byEmployeeId/${employeeId}`),
-        axios.get<AttendanceRecord[]>(`${APIURL}/api/attendance/employee/${employeeId}`)
+        axios.get(`${APIURL}/api/attendance/employee/${employeeId}`)
       ]);
 
       const employeeData = employeeRes.data;
       if (!employeeData) throw new Error('Employee data not found.');
       setEmployee(employeeData);
-      if (employeeData.profilePhotoUrl) {
-        setProfilePhoto(`${APIURL}${employeeData.profilePhotoUrl}`);
-      }
 
+      // --- UPDATED LOGIC HERE ---
+      if (employeeData.profilePhotoUrl) {
+        if (employeeData.profilePhotoUrl.startsWith('http')) {
+          setProfilePhoto(employeeData.profilePhotoUrl);
+        } else {
+          setProfilePhoto(`${APIURL}${employeeData.profilePhotoUrl}`);
+        }
+      } else {
+        setProfilePhoto(''); // Ensure state is cleared if no URL exists
+      }
+      
       const today = new Date().toISOString().split('T')[0];
       const records = Array.isArray(attendanceRes.data) ? attendanceRes.data : [];
-      const normalizeDate = (d: string[] | string): string => {
+      const normalizeDate = (d: any) => {
         if (Array.isArray(d) && d.length >= 3) {
           return `${d[0]}-${String(d[1]).padStart(2, '0')}-${String(d[2]).padStart(2, '0')}`;
         }
@@ -288,16 +287,12 @@ export default function EmployeeLayout({
         }
         return '';
       };
-      const todayRecord = records.find((r: AttendanceRecord) => normalizeDate(r.date) === today);
+      const todayRecord = records.find((r: any) => normalizeDate(r.date) === today);
       setTodayAttendance(todayRecord || { checkInTime: null, checkOutTime: null, status: 'absent', workHours: 0 });
 
-    } catch (err: unknown) {
+    } catch (err: any) {
       console.error("Failed to fetch dashboard data:", err);
-      if (err instanceof AxiosError) {
-        setError(`Failed to load dashboard data: ${err.message}. Please check your network and try again.`);
-      } else {
-        setError("Failed to load dashboard data. Please check your network and try again.");
-      }
+      setError("Failed to load dashboard data. Please check your network and try again.");
     } finally {
       setLoading(false);
     }
