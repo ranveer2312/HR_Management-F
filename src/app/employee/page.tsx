@@ -41,7 +41,7 @@ interface TodayAttendance {
 }
 
 // API Configuration
-const APIURL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+const APIURL = process.env.NEXT_PUBLIC_API_URL || 'https://hr-management-b.onrender.com';
 
 // Work Hours Progress Ring Component
 const WorkHoursRing = ({ hours = 0, targetHours = 8 }: { hours?: number; targetHours?: number }) => {
