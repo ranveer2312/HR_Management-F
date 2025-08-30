@@ -1,9 +1,8 @@
 'use client';
 import React, { useState, useEffect, useCallback } from 'react';
-import { Calendar, Clock, CheckCircle, XCircle, Plus, ArrowLeft, Menu, Bell, Search, User, LogOut, Briefcase, FileText, BarChart2, Book, Award, Folder, HardDrive, BellRing, Settings } from 'lucide-react';
+import { Clock, CheckCircle, XCircle, Plus } from 'lucide-react';
 import axios from 'axios';
 import { APIURL } from '@/constants/api';
-import { useRouter } from 'next/navigation';
 
 interface Leave {
   id?: number;
@@ -19,6 +18,20 @@ interface Leave {
   requestDate?: string;
 }
 
+interface LeaveApiResponse {
+  id: number;
+  employeeId: string;
+  employeeName: string;
+  leaveType: string;
+  startDate: string | number[];
+  endDate: string | number[];
+  numberOfDays?: number;
+  status: string;
+  reason: string;
+  hrComments?: string;
+  requestDate?: string | number[];
+}
+
 interface Holiday {
   id: number;
   holidayName: string;
@@ -29,12 +42,20 @@ interface Holiday {
   coverage: string;
 }
 
+interface HolidayApiResponse {
+  id: number;
+  holidayName?: string;
+  employeeName?: string;
+  day?: string;
+  startDate?: [number, number, number];
+  endDate?: [number, number, number];
+  type?: string;
+  coverage?: string;
+}
+
 export default function LeavesPage() {
-  const router = useRouter();
   const [leaves, setLeaves] = useState<Leave[]>([]);
   const [holidays, setHolidays] = useState<Holiday[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [employeeId, setEmployeeId] = useState<string | null>(null);
 
   const [showForm, setShowForm] = useState(false);
@@ -45,7 +66,7 @@ export default function LeavesPage() {
     reason: ''
   });
 
-  const normalizeDate = (d: any): string => {
+  const normalizeDate = (d: string | number[] | undefined): string => {
     if (!d) return '';
     if (Array.isArray(d) && d.length >= 3) {
       const [y, m, day] = d;
@@ -56,12 +77,10 @@ export default function LeavesPage() {
   };
 
   const fetchLeaves = useCallback(async (empId: string) => {
-    setLoading(true);
-    setError(null);
     try {
       const res = await axios.get(`${APIURL}/api/leave-requests/employee/${empId}`);
       const list = Array.isArray(res.data) ? res.data : [];
-      const mapped: Leave[] = list.map((r: any) => ({
+      const mapped: Leave[] = list.map((r: LeaveApiResponse) => ({
         id: r.id,
         employeeId: r.employeeId,
         employeeName: r.employeeName,
@@ -69,16 +88,14 @@ export default function LeavesPage() {
         startDate: normalizeDate(r.startDate),
         endDate: normalizeDate(r.endDate),
         numberOfDays: r.numberOfDays,
-        status: r.status?.toLowerCase?.() || r.status || 'pending',
+        status: (r.status?.toLowerCase?.() || r.status || 'pending'),
         reason: r.reason,
         hrComments: r.hrComments,
         requestDate: normalizeDate(r.requestDate)
       }));
       setLeaves(mapped);
-    } catch (e: any) {
-      setError('Failed to fetch leaves');
-    } finally {
-      setLoading(false);
+    } catch {
+      // Logic for handling the error can be added here
     }
   }, []);
 
@@ -86,17 +103,17 @@ export default function LeavesPage() {
     try {
       const res = await axios.get(`${APIURL}/api/holidays`);
       const list = Array.isArray(res.data) ? res.data : [];
-      const mapped: Holiday[] = list.map((h: any) => ({
+      const mapped: Holiday[] = list.map((h: HolidayApiResponse) => ({
         id: h.id,
         holidayName: h.holidayName || h.employeeName || 'Holiday',
         day: h.day || '',
-        startDate: Array.isArray(h.startDate) ? h.startDate : [],
-        endDate: Array.isArray(h.endDate) ? h.endDate : [],
+        startDate: Array.isArray(h.startDate) ? h.startDate : [0, 0, 0],
+        endDate: Array.isArray(h.endDate) ? h.endDate : [0, 0, 0],
         type: h.type || 'General',
         coverage: h.coverage || 'All'
       }));
       setHolidays(mapped);
-    } catch (e) {
+    } catch {
       // keep holidays empty silently
     }
   }, []);
@@ -143,10 +160,10 @@ export default function LeavesPage() {
         requestDate: normalizeDate(r.requestDate) || new Date().toISOString().split('T')[0]
       };
       setLeaves((prev) => [added, ...prev]);
-    setShowForm(false);
-    setNewLeave({ leaveType: 'casual', startDate: '', endDate: '', reason: '' });
-    } catch (e: any) {
-      setError('Failed to submit leave request');
+      setShowForm(false);
+      setNewLeave({ leaveType: 'casual', startDate: '', endDate: '', reason: '' });
+    } catch {
+      // Logic for handling the error can be added here
     }
   };
 
@@ -176,107 +193,9 @@ export default function LeavesPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
-      {/* Top Header */}
-      <div className="bg-gradient-to-r from-indigo-600 via-blue-600 to-purple-600 text-white px-6 py-4 shadow-lg">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center">
-            <h1 className="text-xl font-semibold">Employee</h1>
-          </div>
-          <button className="flex items-center px-4 py-2 bg-white/10 backdrop-blur-sm rounded-lg hover:bg-white/20 transition-all duration-200">
-            <LogOut className="w-4 h-4 mr-2" />
-            <span className="text-sm font-medium">Logout</span>
-          </button>
-        </div>
-      </div>
-
       <div className="flex">
-        {/* Sidebar */}
-        <div className="w-64 bg-white shadow-xl border-r border-gray-100 min-h-screen">
-          {/* Logo */}
-          <div className="flex items-center px-6 py-6 border-b border-gray-100">
-            <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center shadow-lg">
-              <span className="text-white font-bold text-sm">3G</span>
-            </div>
-            <span className="ml-3 text-xl font-bold text-gray-800">Admins</span>
-          </div>
-
-          {/* Navigation */}
-          <nav className="mt-6">
-            <div className="px-4 space-y-2">
-              <button onClick={() => router.push('/employee')} className="w-full text-left flex items-center text-gray-600 hover:text-indigo-600 hover:bg-indigo-50 px-4 py-3 rounded-xl cursor-pointer transition-all duration-200 group">
-                <div className="w-5 h-5 mr-3 bg-gray-400 group-hover:bg-indigo-500 rounded-md transition-colors duration-200"></div>
-                <span className="text-sm font-medium">Dashboard</span>
-              </button>
-              <button onClick={() => router.push('/employee/profile')} className="w-full text-left flex items-center text-gray-600 hover:text-indigo-600 hover:bg-indigo-50 px-4 py-3 rounded-xl cursor-pointer transition-all duration-200">
-                <User className="w-5 h-5 mr-3" />
-                <span className="text-sm font-medium">My Profile</span>
-              </button>
-              <button onClick={() => router.push('/employee/attendance')} className="w-full text-left flex items-center text-gray-600 hover:text-indigo-600 hover:bg-indigo-50 px-4 py-3 rounded-xl cursor-pointer transition-all duration-200">
-                <Clock className="w-5 h-5 mr-3" />
-                <span className="text-sm font-medium">Attendance</span>
-              </button>
-              <button onClick={() => router.push('/employee/breaks')} className="w-full text-left flex items-center text-gray-600 hover:text-indigo-600 hover:bg-indigo-50 px-4 py-3 rounded-xl cursor-pointer transition-all duration-200">
-                <Briefcase className="w-5 h-5 mr-3" />
-                <span className="text-sm font-medium">Breaks</span>
-              </button>
-              <button onClick={() => router.push('/employee/leaves')} className="w-full text-left flex items-center text-white bg-gradient-to-r from-indigo-500 to-purple-600 px-4 py-3 rounded-xl cursor-pointer shadow-lg">
-                <Calendar className="w-5 h-5 mr-3" />
-                <span className="text-sm font-semibold">Leave Management</span>
-              </button>
-              <button onClick={() => router.push('/employee/performance')} className="w-full text-left flex items-center text-gray-600 hover:text-indigo-600 hover:bg-indigo-50 px-4 py-3 rounded-xl cursor-pointer transition-all duration-200">
-                <BarChart2 className="w-5 h-5 mr-3" />
-                <span className="text-sm font-medium">Performance</span>
-              </button>
-              <button onClick={() => router.push('/employee/documents')} className="w-full text-left flex items-center text-gray-600 hover:text-indigo-600 hover:bg-indigo-50 px-4 py-3 rounded-xl cursor-pointer transition-all duration-200">
-                <FileText className="w-5 h-5 mr-3" />
-                <span className="text-sm font-medium">Documents</span>
-              </button>
-              <button onClick={() => router.push('/employee/memos')} className="w-full text-left flex items-center text-gray-600 hover:text-indigo-600 hover:bg-indigo-50 px-4 py-3 rounded-xl cursor-pointer transition-all duration-200">
-                <BellRing className="w-5 h-5 mr-3" />
-                <span className="text-sm font-medium">Memos</span>
-              </button>
-              <button onClick={() => router.push('/employee/assets')} className="w-full text-left flex items-center text-gray-600 hover:text-indigo-600 hover:bg-indigo-50 px-4 py-3 rounded-xl cursor-pointer transition-all duration-200">
-                <HardDrive className="w-5 h-5 mr-3" />
-                <span className="text-sm font-medium">Assets</span>
-              </button>
-              <button onClick={() => router.push('/employee/reports')} className="w-full text-left flex items-center text-gray-600 hover:text-indigo-600 hover:bg-indigo-50 px-4 py-3 rounded-xl cursor-pointer transition-all duration-200">
-                <Folder className="w-5 h-5 mr-3" />
-                <span className="text-sm font-medium">Reports</span>
-              </button>
-              <button onClick={() => router.push('/employee/training')} className="w-full text-left flex items-center text-gray-600 hover:text-indigo-600 hover:bg-indigo-50 px-4 py-3 rounded-xl cursor-pointer transition-all duration-200">
-                <Award className="w-5 h-5 mr-3" />
-                <span className="text-sm font-medium">Training & Development</span>
-              </button>
-            </div>
-          </nav>
-        </div>
-
         {/* Main Content */}
         <div className="flex-1">
-          {/* Search Header */}
-          <div className="bg-white border-b border-gray-100 px-8 py-4 shadow-sm">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center flex-1 max-w-lg">
-                <Menu className="w-5 h-5 text-gray-400 mr-4" />
-                <div className="relative flex-1">
-                  <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
-                  <input
-                    type="text"
-                    placeholder="Search..."
-                    className="w-full pl-10 pr-4 py-2 bg-gray-50 border-0 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all duration-200"
-                  />
-                </div>
-              </div>
-              <div className="flex items-center space-x-4">
-                <div className="relative">
-                  <Bell className="w-5 h-5 text-gray-500 hover:text-indigo-600 cursor-pointer transition-colors duration-200" />
-                  <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-white"></div>
-                </div>
-                <div className="w-10 h-10 bg-gradient-to-br from-indigo-400 to-purple-500 rounded-full shadow-lg cursor-pointer hover:shadow-xl transition-shadow duration-200"></div>
-              </div>
-            </div>
-          </div>
-
           {/* Content Area */}
           <div className="p-8">
             {/* Page Title */}

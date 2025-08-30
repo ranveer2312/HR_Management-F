@@ -1,5 +1,4 @@
 'use client';
-
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   FileText,
@@ -11,21 +10,10 @@ import {
   CheckCircle,
   XCircle,
   AlertCircle,
-  LayoutDashboard,
-  User,
-  Calendar,
-  Coffee,
-  Plane,
-  TrendingUp,
-  MessageSquare,
-  Package,
-  BarChart3,
-  GraduationCap,
-  Menu,
+  Menu
 } from 'lucide-react';
 import axios from 'axios';
 import { APIURL } from '@/constants/api';
-import { useRouter } from 'next/navigation';
 
 interface Document {
   id: number;
@@ -46,20 +34,6 @@ interface ApiDocument {
   size: number;
 }
 
-const sidebarItems = [
-  { icon: LayoutDashboard, label: 'Dashboard', id: 'dashboard', href: '/employee' },
-  { icon: User, label: 'My Profile', id: 'profile', href: '/employee' },
-  { icon: Calendar, label: 'Attendance', id: 'attendance', href: '/employee/attendance' },
-  { icon: Coffee, label: 'Breaks', id: 'breaks', href: '/employee/breaks' },
-  { icon: Plane, label: 'Leave Management', id: 'leave', href: '/employee/leaves' },
-  { icon: TrendingUp, label: 'Performance', id: 'performance', href: '/employee/performance' },
-  { icon: FileText, label: 'Documents', id: 'documents', href: '/employee/documents' },
-  { icon: MessageSquare, label: 'Memos', id: 'memos', href: '/employee/memos' },
-  { icon: Package, label: 'Assets', id: 'assets', href: '/employee/assets' },
-  { icon: BarChart3, label: 'Reports', id: 'reports', href: '/employee/reports' },
-  { icon: GraduationCap, label: 'Training & Development', id: 'training', href: '/employee/training' },
-] as const;
-
 function mapApiDocumentToDocument(api: ApiDocument): Document {
   return {
     id: api.id,
@@ -71,7 +45,6 @@ function mapApiDocumentToDocument(api: ApiDocument): Document {
 }
 
 export default function DocumentsPage() {
-  const router = useRouter();
   const [documents, setDocuments] = useState<Document[]>([]);
   const [apiDocuments, setApiDocuments] = useState<ApiDocument[]>([]);
   const [loading, setLoading] = useState(false);
@@ -79,7 +52,6 @@ export default function DocumentsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<'all' | 'verified' | 'pending' | 'rejected'>('all');
   const [downloadingId, setDownloadingId] = useState<number | null>(null);
-  const [activeItem, setActiveItem] = useState('documents');
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const employeeId = typeof window !== 'undefined' ? (sessionStorage.getItem('employeeId') || localStorage.getItem('employeeId')) : null;
@@ -93,12 +65,8 @@ export default function DocumentsPage() {
       const list: ApiDocument[] = Array.isArray(res.data) ? res.data : [];
       setApiDocuments(list);
       setDocuments(list.map(mapApiDocumentToDocument));
-    } catch (err: unknown) { // Use 'unknown' instead of 'any'
-      if (err instanceof Error) {
-        setError('Failed to fetch documents: ' + err.message);
-      } else {
-        setError('Failed to fetch documents');
-      }
+    } catch { // <-- Removed the `_e` parameter
+      setError('Failed to fetch documents');
     } finally {
       setLoading(false);
     }
@@ -197,43 +165,6 @@ export default function DocumentsPage() {
 
   return (
     <div className="flex min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
-      {/* Sidebar - Re-enabled and functional */}
-      <div className={`fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-2xl transform ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0`}>
-        <div className="flex items-center justify-between p-6 border-b border-slate-200">
-          <h2 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-            HR Portal
-          </h2>
-          <button
-            onClick={() => setSidebarOpen(false)}
-            className="lg:hidden text-slate-500 hover:text-slate-700"
-          >
-            <XCircle className="w-6 h-6" /> {/* Used XCircle for close icon */}
-          </button>
-        </div>
-        <nav className="p-4 space-y-2">
-            {sidebarItems.map((item) => {
-            const Icon = item.icon;
-            return (
-              <button
-                key={item.id}
-                onClick={() => {
-                  setActiveItem(item.id);
-                  router.push(item.href);
-                }}
-                className={`w-full flex items-center px-4 py-3 text-left rounded-xl transition-all duration-200 ${
-                  activeItem === item.id
-                    ? 'bg-gradient-to-r from-blue-500 to-indigo-600 text-white shadow-lg'
-                    : 'text-slate-700 hover:bg-slate-100 hover:text-slate-900'
-                }`}
-              >
-                <Icon className={`w-5 h-5 mr-3 ${activeItem === item.id ? 'text-white' : 'text-slate-500'}`} />
-                <span className="font-medium">{item.label}</span>
-              </button>
-            );
-          })}
-        </nav>
-      </div>
-
       {/* Overlay for mobile */}
       {sidebarOpen && (
         <div
@@ -309,7 +240,7 @@ export default function DocumentsPage() {
                   <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
                   <select
                     value={filterStatus}
-                    onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setFilterStatus(e.target.value as 'all' | 'verified' | 'pending' | 'rejected')}
+                    onChange={(e) => setFilterStatus(e.target.value as typeof filterStatus)}
                     className="pl-10 pr-8 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none bg-white min-w-[150px]"
                   >
                     <option value="all">All Status</option>
