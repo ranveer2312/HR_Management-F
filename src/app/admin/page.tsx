@@ -2,29 +2,28 @@
 
 import Link from 'next/link';
 import {
-  Calendar,
-  Package,
   Users,
+  Package,
   Database,
   DollarSign,
-  FileText,
-  MessageSquare,
+  BarChart3,
+  Clock,
+  CheckCircle,
+  TrendingUp,
+  Zap,
   Activity,
-  X,
+  Award,
+  AlertCircle,
+  ArrowUpRight,
   User,
   Mail,
   Lock,
   Eye,
   EyeOff,
   Shield,
-  Bell,
-  CheckCircle,
-  AlertCircle,
-  BarChart3,
 } from 'lucide-react';
 import React, { useState, useEffect } from 'react';
 import { APIURL } from '@/constants/api';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
 
 interface CreateUserForm {
   username: string;
@@ -34,25 +33,45 @@ interface CreateUserForm {
   role: string;
 }
 
-const monthlyAttendanceData = [
-  { month: 'Jan', attendance: 85 },
-  { month: 'Feb', attendance: 92 },
-  { month: 'Mar', attendance: 78 },
-  { month: 'Apr', attendance: 95 },
-  { month: 'May', attendance: 88 },
-  { month: 'Jun', attendance: 91 },
-  { month: 'Jul', attendance: 87 },
-];
+interface RecentActivity {
+  id: string;
+  name: string;
+  description: string;
+  activityDate: string;
+  activityTime: string;
+  category: string;
+  status: string;
+}
 
-const revenueData = [
-  { month: 'Jan', revenue: 45000 },
-  { month: 'Feb', revenue: 52000 },
-  { month: 'Mar', revenue: 48000 },
-  { month: 'Apr', revenue: 61000 },
-  { month: 'May', revenue: 55000 },
-  { month: 'Jun', revenue: 67000 },
-  { month: 'Jul', revenue: 63000 },
-];
+interface Employee {
+  id: string;
+  name: string;
+  department?: string;
+  status?: string;
+  joiningDate?: string;
+  joinDate?: string;
+}
+
+interface AttendanceRecord {
+  id: string;
+  employeeId: string;
+  date: string;
+  status: string;
+}
+
+interface LeaveRequest {
+  id: string;
+  employeeId: string;
+  startDate: string;
+  endDate: string;
+  status: string;
+}
+
+interface ActivityData {
+  id: string;
+  name: string;
+  status: string;
+}
 
 export default function AdminDashboard() {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -60,102 +79,149 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+
+  const [recentActivities, setRecentActivities] = useState<RecentActivity[]>([]);
+  const [activitiesLoading, setActivitiesLoading] = useState(true);
+
+  const [metrics, setMetrics] = useState({
+    totalEmployees: 0,
+    totalDepartments: 0,
+    newEmployees: 0,
+    activeProjects: 0,
+    systemHealth: 0,
+    presentToday: 0,
+    onLeave: 0,
+    tasksCompleted: 0,
+    activeToday: 0,
+  });
+  const [metricsLoading, setMetricsLoading] = useState(true);
+
   const [formData, setFormData] = useState<CreateUserForm>({
     username: '',
     password: '',
     fullName: '',
     email: '',
-    role: 'ADMIN'
+    role: 'ADMIN',
   });
 
-  const dashboardItems = [
-    {
-      id: 'attendance',
-      title: 'Attendance',
-      icon: Calendar,
-      color: 'blue',
-      href: '/admin/attendence',
-    },
-    {
-      id: 'store',
-      title: 'Store',
-      icon: Package,
-      color: 'green',
-      href: '/admin/store',
-    },
-    {
-      id: 'hr',
-      title: 'HR Management',
-      icon: Users,
-      color: 'amber',
-      href: '/admin/hr',
-    },
-    {
-      id: 'data',
-      title: 'Data Management',
-      icon: Database,
-      color: 'red',
-      href: '/admin/data-manager',
-    },
-    {
-      id: 'finance',
-      title: 'Finance',
-      icon: DollarSign,
-      color: 'indigo',
-      href: '/admin/finance-manager/dashboard',
-    },
-    {
-      id: 'reports',
-      title: 'Reports',
-      icon: FileText,
-      color: 'purple',
-      href: '/admin/reports',
-    },
-    {
-      id: 'notifications',
-      title: 'Notifications',
-      icon: MessageSquare,
-      color: 'teal',
-      href: '/admin/memos',
-    },
-  ];
-
-  const recentActivities = [
-    { id: 1, action: 'Employee John Doe marked his attendance at 9:15 AM', time: '2 hours ago' },
-    { id: 2, action: 'Monthly HR Office Setup Updated: March 15', time: '4 hours ago' },
-    { id: 3, action: 'New store request has been auto-generating approval', time: '6 hours ago' },
-    { id: 4, action: 'Invoice #2023005 was successfully sent to client', time: '1 day ago' },
-    { id: 5, action: 'Report Monthly Sales Summary generated and sent successfully', time: '1 day ago' },
-    { id: 6, action: 'Attendance excel file has been processed successfully', time: '2 days ago' },
-  ];
-
-  const inventorySnapshot = [
-    { name: 'Printer Paper', stock: 25, status: 'Low', category: 'Stationery' },
-    { name: 'Ergonomic Keyboards', stock: 12, status: 'High', category: 'Hardware' },
-    { name: 'Wireless Mice', stock: 8, status: 'Medium', category: 'Hardware' },
-    { name: 'Monitor Stands', stock: 15, status: 'High', category: 'Hardware' },
-  ];
-
-  const notifications = [
-    { id: 1, message: 'New update available for monthly feature', type: 'info' },
-    { id: 2, message: 'Server maintenance scheduled for tonight', type: 'warning' },
-    { id: 3, message: 'Monthly attendance & Finance meeting at 2 PM', type: 'info' },
-  ];
-
-  // Check authentication
-  useEffect(() => {
+  // ✅ Helper to always send auth header
+  const fetchWithAuth = async (url: string, options: RequestInit = {}) => {
     const token = localStorage.getItem('token');
     if (!token) {
       window.location.href = '/login';
+      return [];
     }
+
+    const headers = {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
+      ...(options.headers || {}),
+    };
+
+    try {
+      const response = await fetch(url, { ...options, headers });
+      if (!response.ok) {
+        console.error(`Error fetching ${url}:`, response.status);
+        return [];
+      }
+      
+      const text = await response.text();
+      if (!text.trim()) {
+        return [];
+      }
+      
+      try {
+        return JSON.parse(text);
+      } catch {
+        console.error(`Invalid JSON from ${url}`);
+        return [];
+      }
+    } catch (err) {
+      console.error(`Network error for ${url}:`, err);
+      return [];
+    }
+  };
+
+  const quickActions = [
+    { title: 'Employee Management', description: 'Manage employee records', icon: Users, href: '/admin/hr', color: 'bg-blue-50 text-blue-600 border-blue-200' },
+    { title: 'Attendance Tracking', description: 'Monitor attendance', icon: Clock, href: '/admin/attendence', color: 'bg-green-50 text-green-600 border-green-200' },
+    { title: 'Finance Management', description: 'Financial operations', icon: DollarSign, href: '/admin/finance-manager/dashboard', color: 'bg-purple-50 text-purple-600 border-purple-200' },
+    { title: 'Inventory Control', description: 'Manage Store', icon: Package, href: '/admin/store', color: 'bg-orange-50 text-orange-600 border-orange-200' },
+    { title: 'Reports & Analytics', description: 'Generate reports', icon: BarChart3, href: '/admin/reports', color: 'bg-indigo-50 text-indigo-600 border-indigo-200' },
+    { title: 'Data Management', description: 'System data control', icon: Database, href: '/admin/data-manager', color: 'bg-red-50 text-red-600 border-red-200' },
+  ];
+
+  useEffect(() => {
+    const fetchActivities = async () => {
+      setActivitiesLoading(true);
+      const data = await fetchWithAuth(`${APIURL}/api/activities`);
+      setRecentActivities(Array.isArray(data) ? data.slice(0, 6) : []);
+      setActivitiesLoading(false);
+    };
+
+    const fetchMetrics = async () => {
+      setMetricsLoading(true);
+
+      const employees = await fetchWithAuth(`${APIURL}/api/employees`);
+      const attendanceData = await fetchWithAuth(`${APIURL}/api/attendance`);
+      const leaveData = await fetchWithAuth(`${APIURL}/api/leave-requests`);
+      const activitiesData = await fetchWithAuth(`${APIURL}/api/activities`);
+
+      const totalEmployees = Array.isArray(employees) ? employees.length : 0;
+      const activeEmployees = Array.isArray(employees) ? employees.filter((emp: Employee) => emp.status === 'active' || !emp.status).length : 0;
+
+      const departments = new Set(Array.isArray(employees) ? employees.map((emp: Employee) => emp.department || '').filter(Boolean) : []);
+      const totalDepartments = departments.size;
+
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      const newEmployees = Array.isArray(employees) ? employees.filter((emp: Employee) => {
+        if (!emp.joiningDate && !emp.joinDate) return false;
+        const dateString = emp.joiningDate || emp.joinDate;
+        if (!dateString) return false;
+        const joinDate = new Date(dateString);
+        return !isNaN(joinDate.getTime()) && joinDate >= thirtyDaysAgo;
+      }).length : 0;
+
+      const today = new Date().toISOString().split('T')[0];
+      const todayAttendance = Array.isArray(attendanceData) ? attendanceData.filter((record: AttendanceRecord) => record.date === today && record.status === 'present') : [];
+
+      const onLeaveToday = Array.isArray(leaveData) ? leaveData.filter((leave: LeaveRequest) => {
+        const start = new Date(leave.startDate);
+        const end = new Date(leave.endDate);
+        const todayDate = new Date();
+        return leave.status === 'Approved' && start <= todayDate && end >= todayDate;
+      }).length : 0;
+
+      const completedTasks = Array.isArray(activitiesData) ? activitiesData.filter((act: ActivityData) => act.status === 'completed').length : 0;
+
+      const systemHealth = Math.min(
+        98,
+        Math.max(85, 95 - (onLeaveToday / (totalEmployees || 1)) * 10 + (todayAttendance.length / (totalEmployees || 1)) * 5),
+      );
+
+      setMetrics({
+        totalEmployees,
+        totalDepartments,
+        newEmployees,
+        activeProjects: 12,
+        systemHealth: Math.round(systemHealth),
+        presentToday: todayAttendance.length,
+        onLeave: onLeaveToday,
+        tasksCompleted: completedTasks,
+        activeToday: activeEmployees,
+      });
+
+      setMetricsLoading(false);
+    };
+
+    fetchActivities();
+    fetchMetrics();
   }, []);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    setFormData(prev => ({ ...prev, [name]: value }));
     if (error) setError('');
     if (success) setSuccess('');
   };
@@ -166,28 +232,21 @@ export default function AdminDashboard() {
     setError('');
     setSuccess('');
 
+    const token = localStorage.getItem('token');
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(APIURL +'/api/auth/register', {
+      const response = await fetch(`${APIURL}/api/auth/register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${token}`,
         },
-        body: JSON.stringify(formData)
+        body: JSON.stringify(formData),
       });
 
       const data = await response.json();
-
       if (response.ok) {
         setSuccess('User created successfully!');
-        setFormData({
-          username: '',
-          password: '',
-          fullName: '',
-          email: '',
-          role: 'ADMIN'
-        });
+        setFormData({ username: '', password: '', fullName: '', email: '', role: 'ADMIN' });
         setTimeout(() => {
           setIsModalOpen(false);
           setSuccess('');
@@ -195,292 +254,214 @@ export default function AdminDashboard() {
       } else {
         setError(data.message || 'Failed to create user');
       }
-    } catch (e) {
-      if (e instanceof Error) {
-        setError(`Failed to fetch documents: ${e.message}`);
-      } else {
-        setError('Failed to fetch documents: Unknown error occurred.');
-      }
+    } catch {
+      setError('Failed to create user: Network error');
     } finally {
       setLoading(false);
     }
   };
 
-//   const handleLogout = () => {
-//   localStorage.removeItem('token');
-//   window.location.href = '/login';
-// };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'High': return 'text-green-600 bg-green-100';
-      case 'Medium': return 'text-yellow-600 bg-yellow-100';
-      case 'Low': return 'text-red-600 bg-red-100';
-      default: return 'text-gray-600 bg-gray-100';
-    }
-  };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
-      {/* Sidebar */}
-      <div className="fixed h-full  bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 z-40">
-        <div className="p-6">
-          <div className="flex items-center space-x-2 mb-8">
-            <Activity className="w-8 h-8 text-indigo-600" />
-            <span className="text-xl font-bold text-gray-800 dark:text-white">Tiranga Aerospace</span>
-          </div>
-          
-          <nav className="space-y-2">
-            <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Navigation</div>
-            {dashboardItems.map((item) => {
-              const Icon = item.icon;
-              return (
-                <Link
-                  key={item.id}
-                  href={item.href}
-                  className="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                >
-                  <Icon className="w-5 h-5 text-gray-600 dark:text-gray-400" />
-                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{item.title}</span>
-                </Link>
-              );
-            })}
-          </nav>
-        </div>
-      </div>
-
-      {/* Main Content */}
-      <div className="ml-64">
-        {/* Dashboard Content */}
-        <main className="p-6">
-          {/* Welcome Section */}
-          <div className="mb-8">
-            <h1 className="text-2xl font-bold text-gray-800 dark:text-white mb-2">Welcome, Admin!</h1>
-            <p className="text-gray-600 dark:text-gray-400">Tuesday, August 12, 2024</p>
-          </div>
-
-          {/* Stats Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm border border-gray-200 dark:border-gray-700">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">Total Employees</p>
-                  <p className="text-2xl font-bold text-gray-900 dark:text-white">245</p>
-                  <p className="text-xs text-green-600">+12% vs last month</p>
-                </div>
-                <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/50 rounded-lg flex items-center justify-center">
-                  <Users className="w-6 h-6 text-blue-600 dark:text-blue-400" />
-                </div>
-              </div>
+    <>
+      <div className="max-w-7xl mx-auto px-6 py-8">
+            {/* Welcome Section */}
+            <div className="mb-8">
+              <h1 className="text-3xl font-bold text-gray-900 mb-2">
+                Welcome back, Admin!
+              </h1>
+              <p className="text-gray-600">Here&apos;s what&apos;s happening in your organization today.</p>
             </div>
 
-            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm border border-gray-200 dark:border-gray-700">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">Departments</p>
-                  <p className="text-2xl font-bold text-gray-900 dark:text-white">12</p>
-                  <p className="text-xs text-gray-500">All active</p>
-                </div>
-                <div className="w-12 h-12 bg-green-100 dark:bg-green-900/50 rounded-lg flex items-center justify-center">
-                  <Package className="w-6 h-6 text-green-600 dark:text-green-400" />
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm border border-gray-200 dark:border-gray-700">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">Active Projects</p>
-                  <p className="text-2xl font-bold text-gray-900 dark:text-white">8</p>
-                  <p className="text-xs text-blue-600">2 due this week</p>
-                </div>
-                <div className="w-12 h-12 bg-purple-100 dark:bg-purple-900/50 rounded-lg flex items-center justify-center">
-                  <FileText className="w-6 h-6 text-purple-600 dark:text-purple-400" />
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm border border-gray-200 dark:border-gray-700">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">Revenue This Month</p>
-                  <p className="text-2xl font-bold text-gray-900 dark:text-white">3</p>
-                  <p className="text-xs text-green-600">+8% vs last month</p>
-                </div>
-                <div className="w-12 h-12 bg-indigo-100 dark:bg-indigo-900/50 rounded-lg flex items-center justify-center">
-                  <DollarSign className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Secondary Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm border border-gray-200 dark:border-gray-700">
-              <div className="flex items-center justify-between mb-2">
-                <div>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">New Notifications</p>
-                  <p className="text-xl font-bold text-gray-900 dark:text-white">5</p>
-                  <p className="text-xs text-gray-500">2 unread</p>
-                </div>
-                <Bell className="w-8 h-8 text-orange-500" />
-              </div>
-            </div>
-
-            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm border border-gray-200 dark:border-gray-700">
-              <div className="flex items-center justify-between mb-2">
-                <div>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">Reports Generated</p>
-                  <p className="text-xl font-bold text-gray-900 dark:text-white">42</p>
-                  <p className="text-xs text-gray-500">This month</p>
-                </div>
-                <BarChart3 className="w-8 h-8 text-green-500" />
-              </div>
-            </div>
-          </div>
-
-          {/* Charts and Data Section */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-            {/* Monthly Attendance Trend */}
-            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm border border-gray-200 dark:border-gray-700">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Monthly Attendance Trend</h3>
-              <div className="h-64">
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={monthlyAttendanceData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="month" />
-                    <YAxis />
-                    <Tooltip />
-                    <Line type="monotone" dataKey="attendance" stroke="#3b82f6" strokeWidth={2} />
-                  </LineChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-
-            {/* Quarterly Revenue Trend */}
-            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm border border-gray-200 dark:border-gray-700">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Quarterly Revenue Trend</h3>
-              <div className="h-64">
-                <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={revenueData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="month" />
-                    <YAxis />
-                    <Tooltip />
-                    <Area type="monotone" dataKey="revenue" stroke="#10b981" fill="#10b981" fillOpacity={0.2} />
-                  </AreaChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-          </div>
-
-          {/* Bottom Section */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Recent Activity */}
-            <div className="lg:col-span-2 bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm border border-gray-200 dark:border-gray-700">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Recent Activity</h3>
-              <div className="space-y-3">
-                {recentActivities.map((activity) => (
-                  <div key={activity.id} className="flex items-start space-x-3 p-3 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg">
-                    <div className="w-2 h-2 bg-indigo-600 rounded-full mt-2 flex-shrink-0"></div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm text-gray-900 dark:text-white">{activity.action}</p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{activity.time}</p>
-                    </div>
+            {/* Key Metrics */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+              <div className="bg-white rounded-xl p-6 border border-gray-200">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">Total Employees</p>
+                    <p className="text-2xl font-semibold text-gray-900 mt-1">{metricsLoading ? '...' : metrics.totalEmployees}</p>
+                    <p className="text-sm text-green-600 mt-1">+12% from last month</p>
                   </div>
+                  <div className="p-3 bg-blue-100 rounded-lg">
+                    <Users className="w-6 h-6 text-blue-600" />
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white rounded-xl p-6 border border-gray-200">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">Present Today</p>
+                    <p className="text-2xl font-semibold text-gray-900 mt-1">{metricsLoading ? '...' : metrics.presentToday}</p>
+                    <p className="text-sm text-green-600 mt-1">Employees at work</p>
+                  </div>
+                  <div className="p-3 bg-green-100 rounded-lg">
+                    <CheckCircle className="w-6 h-6 text-green-600" />
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white rounded-xl p-6 border border-gray-200">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">Total Departments</p>
+                    <p className="text-2xl font-semibold text-gray-900 mt-1">{metricsLoading ? '...' : metrics.totalDepartments}</p>
+                    <p className="text-sm text-blue-600 mt-1">Active departments</p>
+                  </div>
+                  <div className="p-3 bg-purple-100 rounded-lg">
+                    <TrendingUp className="w-6 h-6 text-purple-600" />
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white rounded-xl p-6 border border-gray-200">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">New Hires</p>
+                    <p className="text-2xl font-semibold text-green-600 mt-1">0</p>
+                    <p className="text-sm text-gray-600 mt-1">Any new hires</p>
+                  </div>
+                  <div className="p-3 bg-green-100 rounded-lg">
+                    <Zap className="w-6 h-6 text-green-600" />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Quick Actions Grid */}
+            <div className="bg-white rounded-xl border border-gray-200 p-8 mb-8">
+              <h2 className="text-2xl font-semibold text-gray-900 mb-8">Admin Panel</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {quickActions.map((action, index) => (
+                  <Link key={index} href={action.href}>
+                    <div className={`p-6 rounded-xl border-2 hover:shadow-lg transition-all duration-200 cursor-pointer group ${action.color}`}>
+                      <div className="flex items-center space-x-4">
+                        <div className="p-3 rounded-xl bg-white/80 group-hover:scale-110 transition-transform duration-200">
+                          <action.icon className="w-6 h-6" />
+                        </div>
+                        <div className="flex-1">
+                          <h3 className="font-semibold text-lg mb-1">{action.title}</h3>
+                          <p className="text-sm opacity-75">{action.description}</p>
+                        </div>
+                        <ArrowUpRight className="w-5 h-5 opacity-50 group-hover:opacity-100 transition-opacity" />
+                      </div>
+                    </div>
+                  </Link>
                 ))}
               </div>
             </div>
 
-            {/* Right Column */}
-            <div className="space-y-6">
-              {/* Inventory Snapshot */}
-              <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm border border-gray-200 dark:border-gray-700">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Inventory Snapshot</h3>
-                <div className="space-y-3">
-                  {inventorySnapshot.map((item, index) => (
-                    <div key={index} className="flex items-center justify-between">
-                      <div>
-                        <p className="text-sm font-medium text-gray-900 dark:text-white">{item.name}</p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">{item.category}</p>
+            {/* Bottom Section */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              {/* Recent Activities */}
+              <div className="bg-white rounded-xl border border-gray-200 p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-6">Recent Activities</h3>
+                {activitiesLoading ? (
+                  <div className="text-center py-8 text-gray-500">Loading activities...</div>
+                ) : recentActivities.length > 0 ? (
+                  <div className="space-y-4">
+                    {recentActivities.map((activity) => (
+                      <div key={activity.id} className="flex items-start space-x-4 p-4 bg-gray-50 rounded-lg">
+                        <div className="p-2 bg-blue-100 rounded-lg">
+                          <Activity className="w-4 h-4 text-blue-600" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-gray-900">{activity.name}</p>
+                          <p className="text-xs text-gray-500 mt-1">{activity.description}</p>
+                          <div className="flex items-center mt-2 space-x-4">
+                            <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                              activity.status === 'completed' ? 'bg-green-100 text-green-800' :
+                              activity.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                              'bg-blue-100 text-blue-800'
+                            }`}>
+                              {activity.status}
+                            </span>
+                            <span className="text-xs text-gray-500">{activity.activityDate}</span>
+                          </div>
+                        </div>
                       </div>
-                      <div className="flex items-center space-x-2">
-                        <span className="text-sm font-medium text-gray-900 dark:text-white">{item.stock}</span>
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(item.status)}`}>
-                          {item.status}
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8 text-gray-500">
+                    <Activity className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+                    <p>No recent activities</p>
+                  </div>
+                )}
               </div>
 
-              {/* Recent Notifications */}
-              <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm border border-gray-200 dark:border-gray-700">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Recent Notifications</h3>
-                <div className="space-y-3">
-                  {notifications.map((notification) => (
-                    <div key={notification.id} className="flex items-start space-x-3">
-                      {notification.type === 'warning' ? 
-                        <AlertCircle className="w-5 h-5 text-yellow-500 flex-shrink-0 mt-0.5" /> :
-                        <CheckCircle className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" />
-                      }
-                      <p className="text-sm text-gray-900 dark:text-white">{notification.message}</p>
+              {/* System Overview */}
+              <div className="bg-white rounded-xl border border-gray-200 p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-6">System Overview</h3>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
+                    <div className="flex items-center space-x-3">
+                      <CheckCircle className="w-5 h-5 text-blue-600" />
+                      <span className="text-sm font-medium text-gray-900">Present Today</span>
                     </div>
-                  ))}
+                    <span className="text-sm font-semibold text-blue-600">{metricsLoading ? '...' : metrics.presentToday}</span>
+                  </div>
+                  <div className="flex items-center justify-between p-3 bg-orange-50 rounded-lg">
+                    <div className="flex items-center space-x-3">
+                      <AlertCircle className="w-5 h-5 text-orange-600" />
+                      <span className="text-sm font-medium text-gray-900">On Leave</span>
+                    </div>
+                    <span className="text-sm font-semibold text-orange-600">{metricsLoading ? '...' : metrics.onLeave}</span>
+                  </div>
+                  <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
+                    <div className="flex items-center space-x-3">
+                      <Award className="w-5 h-5 text-green-600" />
+                      <span className="text-sm font-medium text-gray-900">Tasks Completed</span>
+                    </div>
+                    <span className="text-sm font-semibold text-green-600">{metricsLoading ? '...' : metrics.tasksCompleted}</span>
+                  </div>
+                  <div className="flex items-center justify-between p-3 bg-purple-50 rounded-lg">
+                    <div className="flex items-center space-x-3">
+                      <Zap className="w-5 h-5 text-purple-600" />
+                      <span className="text-sm font-medium text-gray-900">System Status</span>
+                    </div>
+                    <span className="text-sm font-semibold text-green-600">Healthy</span>
+                  </div>
                 </div>
               </div>
-            </div>
-          </div>
-        </main>
+        </div>
       </div>
 
       {/* Create User Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-md w-full p-6 relative transform transition-all duration-300">
-            <button
-              onClick={() => setIsModalOpen(false)}
-              className="absolute top-5 right-5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
-            >
-              <X className="h-5 w-5" />
-            </button>
-
+          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6 relative">
             <div className="text-center mb-6">
-              <div className="bg-indigo-100 dark:bg-indigo-900/50 w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-4">
-                <Shield className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
+              <div className="bg-blue-100 w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-4">
+                <Shield className="w-6 h-6 text-blue-600" />
               </div>
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Create New User</h2>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Fill in the details to create a new user account</p>
+              <h2 className="text-xl font-semibold text-gray-900">Create New User</h2>
+              <p className="text-sm text-gray-500 mt-1">Fill in the details to create a new user account</p>
             </div>
 
             {error && (
-              <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 px-4 py-3 rounded-lg mb-6">
+              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6">
                 {error}
               </div>
             )}
 
             {success && (
-              <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-green-700 dark:text-green-300 px-4 py-3 rounded-lg mb-6">
+              <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg mb-6">
                 {success}
               </div>
             )}
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Username
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Username</label>
                 <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <User className="h-5 w-5 text-gray-400" />
-                  </div>
+                  <User className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
                   <input
                     type="text"
                     name="username"
                     value={formData.username}
                     onChange={handleInputChange}
-                    className="block w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:focus:ring-indigo-500 dark:focus:border-indigo-500 placeholder-gray-400 dark:placeholder-gray-500 text-gray-900 dark:text-white"
+                    className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     placeholder="Enter username"
                     required
                   />
@@ -488,19 +469,15 @@ export default function AdminDashboard() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Full Name
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
                 <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <User className="h-5 w-5 text-gray-400" />
-                  </div>
+                  <User className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
                   <input
                     type="text"
                     name="fullName"
                     value={formData.fullName}
                     onChange={handleInputChange}
-                    className="block w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:focus:ring-indigo-500 dark:focus:border-indigo-500 placeholder-gray-400 dark:placeholder-gray-500 text-gray-900 dark:text-white"
+                    className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     placeholder="Enter full name"
                     required
                   />
@@ -508,66 +485,56 @@ export default function AdminDashboard() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Email Address
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
                 <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Mail className="h-5 w-5 text-gray-400" />
-                  </div>
+                  <Mail className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
                   <input
                     type="email"
                     name="email"
                     value={formData.email}
                     onChange={handleInputChange}
-                    className="block w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:focus:ring-indigo-500 dark:focus:border-indigo-500 placeholder-gray-400 dark:placeholder-gray-500 text-gray-900 dark:text-white"
-                    placeholder="Enter email address"
+                    className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="Enter email"
                     required
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Password
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
                 <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Lock className="h-5 w-5 text-gray-400" />
-                  </div>
+                  <Lock className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
                   <input
                     type={showPassword ? 'text' : 'password'}
                     name="password"
                     value={formData.password}
                     onChange={handleInputChange}
-                    className="block w-full pl-10 pr-10 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:focus:ring-indigo-500 dark:focus:border-indigo-500 placeholder-gray-400 dark:placeholder-gray-500 text-gray-900 dark:text-white"
+                    className="w-full pl-10 pr-10 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     placeholder="Enter password"
                     required
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
                   >
-                    {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                   </button>
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Role
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
                 <select
                   name="role"
                   value={formData.role}
                   onChange={handleInputChange}
-                  className="block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:focus:ring-indigo-500 dark:focus:border-indigo-500 text-gray-900 dark:text-white"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   required
                 >
                   <option value="ADMIN">Admin</option>
                   <option value="EMPLOYEE">Employee</option>
-                  <option value="STORE">Inventory Control Panel</option>
+                  <option value="STORE">Store Manager</option>
                   <option value="HR">HR</option>
                   <option value="DATAMANAGER">Data Manager</option>
                   <option value="FINANCEMANAGER">Finance Manager</option>
@@ -578,46 +545,22 @@ export default function AdminDashboard() {
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                  className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={loading}
-                  className="px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
                 >
-                  {loading ? (
-                    <div className="flex items-center justify-center">
-                      <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                      </svg>
-                      Creating...
-                    </div>
-                  ) : (
-                    'Create User'
-                  )}
+                  {loading ? 'Creating...' : 'Create User'}
                 </button>
               </div>
             </form>
           </div>
         </div>
       )}
-
-      {/* Footer */}
-      <footer className="ml-64 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 px-6 py-4">
-        <div className="flex items-center justify-between text-sm text-gray-600 dark:text-gray-400">
-          <div className="flex items-center space-x-4">
-            <Link href="/docs" className="hover:text-gray-900 dark:hover:text-white">Docs</Link>
-            <Link href="/legal" className="hover:text-gray-900 dark:hover:text-white">Legal</Link>
-            <Link href="/contact" className="hover:text-gray-900 dark:hover:text-white">Contact</Link>
-          </div>
-          <div className="flex items-center space-x-2">
-            <span>© 2025 Tiranga Aerospace. All rights reserved.</span>
-          </div>
-        </div>
-      </footer>
-    </div>
+    </>
   );
 }

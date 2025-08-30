@@ -11,9 +11,7 @@ import {
   Clock,
  
   LucideIcon,
-  ArrowLeft
 } from 'lucide-react';
-import Link from 'next/link';
 
 interface MenuItem {
   id: string;
@@ -47,15 +45,7 @@ export default function HRLayout({
      
    
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Navigation Tabs */}  <div className="mb-6">
-          <Link
-            href="/admin"
-            className="inline-flex items-center text-gray-600 hover:text-gray-900"
-          >
-            <ArrowLeft className="w-5 h-5 mr-2" />
-            Back to Dashboard
-          </Link>
-        </div>
+        {/* Navigation Tabs */}
         <div className="mb-8">
           <div className="border-b border-gray-200">
             <nav className="-mb-px flex space-x-8 overflow-x-auto">

@@ -12,12 +12,21 @@ import {
   TrendingUp,
   GraduationCap,
   LogOut,
-  Search,
+
+
   Bell,
-  User
+  User,
+  Menu,
+  X
 } from 'lucide-react';
 import Link from 'next/link';
 import { APIURL } from '@/constants/api';
+
+
+
+
+
+
 
 
 // ------------------- Interfaces --------------------
@@ -30,11 +39,23 @@ interface LeaveRequest {
 }
 
 
+
+
+
+
+
+
 interface Employee {
   id: string;
   name: string;
   status?: string;
 }
+
+
+
+
+
+
 
 
 // ------------------- Sidebar Items -------------------
@@ -48,6 +69,12 @@ const sidebarItems = [
   { id: 'activities', label: 'Activity Stream', icon: TrendingUp, path: '/hr/activities' },
   { id: 'training', label: 'Training and Development', icon: GraduationCap, path: '/hr/training' }
 ];
+
+
+
+
+
+
 
 
 // ------------------- Notification Bell -------------------
@@ -76,19 +103,19 @@ const NotificationBell = () => {
     <div className="relative">
       <button
         onClick={() => setShowDropdown(!showDropdown)}
-        className="relative p-2.5 text-slate-600 hover:bg-slate-100 rounded-xl transition-colors"
+        className="relative p-2 sm:p-2.5 text-slate-600 hover:bg-slate-100 rounded-xl transition-colors"
       >
         <Bell className="w-5 h-5" />
         {unreadCount > 0 && (
-          <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center animate-pulse">
-            {unreadCount}
+          <span className="absolute -top-1 -right-1 w-4 h-4 sm:w-5 sm:h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center animate-pulse">
+            {unreadCount > 9 ? '9+' : unreadCount}
           </span>
         )}
       </button>
 
 
       {showDropdown && (
-        <div className="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-lg border border-slate-200 z-50">
+        <div className="absolute right-0 mt-2 w-72 sm:w-80 bg-white rounded-xl shadow-lg border border-slate-200 z-50 max-w-[calc(100vw-2rem)]">
           <div className="p-4 border-b border-slate-200">
             <h3 className="font-semibold text-slate-900">Leave Requests</h3>
           </div>
@@ -97,12 +124,12 @@ const NotificationBell = () => {
               notifications.map((notification) => (
                 <div key={notification.id} className="p-4 border-b border-slate-100 hover:bg-slate-50">
                   <div className="flex justify-between items-start">
-                    <div>
-                      <p className="font-medium text-slate-900">{notification.employeeName}</p>
-                      <p className="text-sm text-slate-600">{notification.leaveType}</p>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-slate-900 truncate">{notification.employeeName}</p>
+                      <p className="text-sm text-slate-600 truncate">{notification.leaveType}</p>
                       <p className="text-xs text-slate-500">Start: {notification.startDate}</p>
                     </div>
-                    <span className="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs rounded-full">
+                    <span className="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs rounded-full ml-2 flex-shrink-0">
                       {notification.status}
                     </span>
                   </div>
@@ -126,6 +153,12 @@ const NotificationBell = () => {
     </div>
   );
 };
+
+
+
+
+
+
 
 
 // ------------------- Welcome Section -------------------
@@ -162,21 +195,21 @@ const WelcomeSection = () => {
 
 
   return (
-    <div className="px-6 py-6 bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50">
-      <div className="flex items-center justify-between">
+    <div className="px-4 sm:px-6 py-4 sm:py-6 bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50">
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
         <div>
-          <h2 className="text-3xl font-bold text-slate-900 mb-2">
+          <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 mb-2">
             Hello, {greeting}!
           </h2>
-          <p className="text-slate-600 text-lg">
+          <p className="text-slate-600 text-base sm:text-lg">
             Here&apos;s what&apos;s happening with your team today.
           </p>
         </div>
-        <div className="flex items-center space-x-4 text-sm text-slate-600">
-          <div className="bg-white rounded-lg px-4 py-2 shadow-sm border border-slate-200">
-            <span className="font-medium">Today:</span> {currentDate}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-4 text-sm text-slate-600">
+          <div className="bg-white rounded-lg px-3 sm:px-4 py-2 shadow-sm border border-slate-200 w-full sm:w-auto">
+            <span className="font-medium">Today:</span> <span className="block sm:inline">{currentDate}</span>
           </div>
-          <div className="bg-white rounded-lg px-4 py-2 shadow-sm border border-slate-200">
+          <div className="bg-white rounded-lg px-3 sm:px-4 py-2 shadow-sm border border-slate-200 w-full sm:w-auto">
             <span className="font-medium">Active Employees:</span> {activeEmployees}
           </div>
         </div>
@@ -186,50 +219,57 @@ const WelcomeSection = () => {
 };
 
 
+
+
+
+
+
+
 // ------------------- HR Layout -------------------
 export default function HRLayout({ children }: { children: React.ReactNode }) {
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+
   return (
     <div className="min-h-screen bg-slate-50">
       {/* Header */}
       <header className="bg-white border-b border-slate-200 shadow-sm">
-        <div className="px-6 py-4 border-b border-slate-100">
+        <div className="px-4 sm:px-6 py-4 border-b border-slate-100">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
-              <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center">
+              {/* Mobile menu button */}
+              <button
+                onClick={() => setSidebarOpen(!sidebarOpen)}
+                className="lg:hidden p-2 text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
+              >
+                <Menu className="w-6 h-6" />
+              </button>
+             
+              <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
                 <span className="text-white font-bold text-lg">HR</span>
               </div>
-              <div>
-                <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+              <div className="hidden sm:block">
+                <h1 className="text-xl sm:text-2xl font-bold text-slate-900">
                   HR Manager
                 </h1>
-                <p className="text-sm text-slate-500">Enterprise Workforce Management</p>
+                <p className="text-sm text-slate-500 hidden md:block">Enterprise Workforce Management</p>
               </div>
             </div>
 
 
-            <div className="flex items-center space-x-6">
-              <div className="relative">
-                <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" />
-                <input
-                  type="text"
-                  placeholder="Search employees, documents, reports..."
-                  className="pl-9 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent w-80"
-                />
-              </div>
-
-
-              <div className="flex items-center space-x-3">
+            <div className="flex items-center space-x-2 sm:space-x-6">
+              <div className="flex items-center space-x-2 sm:space-x-3">
                 <NotificationBell />
 
 
-                <div className="w-px h-6 bg-slate-200"></div>
+                <div className="w-px h-6 bg-slate-200 hidden sm:block"></div>
 
 
-                <div className="flex items-center space-x-3">
+                <div className="flex items-center space-x-2 sm:space-x-3">
                   <div className="w-8 h-8 bg-gradient-to-br from-blue-400 to-indigo-500 rounded-full flex items-center justify-center">
                     <User className="w-4 h-4 text-white" />
                   </div>
-                  <div className="text-sm">
+                  <div className="text-sm hidden md:block">
                     <div className="font-medium text-slate-900">Bharath</div>
                     <div className="text-slate-500">HR Manager</div>
                   </div>
@@ -241,10 +281,10 @@ export default function HRLayout({ children }: { children: React.ReactNode }) {
                     localStorage.removeItem('token');
                     window.location.href = '/login';
                   }}
-                  className="flex items-center space-x-2 px-4 py-2.5 text-slate-600 hover:bg-slate-100 rounded-xl transition-colors"
+                  className="flex items-center space-x-2 px-2 sm:px-4 py-2.5 text-slate-600 hover:bg-slate-100 rounded-xl transition-colors"
                 >
                   <LogOut className="w-5 h-5" />
-                  <span className="text-sm font-medium">Logout</span>
+                  <span className="text-sm font-medium hidden sm:inline">Logout</span>
                 </button>
               </div>
             </div>
@@ -252,14 +292,43 @@ export default function HRLayout({ children }: { children: React.ReactNode }) {
         </div>
 
 
-        <WelcomeSection />
+        <div className="hidden lg:block">
+          <WelcomeSection />
+        </div>
       </header>
 
 
-      <div className="flex">
+      <div className="flex relative">
+        {/* Mobile sidebar overlay */}
+        {sidebarOpen && (
+          <div
+            className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
+            onClick={() => setSidebarOpen(false)}
+          />
+        )}
+
+
         {/* Sidebar */}
-        <nav className="w-72 bg-white border-r border-slate-200 shadow-sm min-h-screen">
-          <div className="p-6">
+        <nav className={`
+          fixed lg:static inset-y-0 left-0 z-50 w-64 bg-white border-r border-slate-200 shadow-sm transform transition-transform duration-300 ease-in-out lg:transform-none
+          ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+        `}>
+          <div className="flex items-center justify-between p-4 lg:hidden border-b border-slate-200">
+            <div className="flex items-center space-x-3">
+              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+                <span className="text-white font-bold">HR</span>
+              </div>
+              <span className="font-semibold text-slate-900">HR Manager</span>
+            </div>
+            <button
+              onClick={() => setSidebarOpen(false)}
+              className="p-2 text-slate-600 hover:bg-slate-100 rounded-lg"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+         
+          <div className="p-4 lg:p-6 overflow-y-auto h-full">
             <div className="space-y-2">
               {sidebarItems.map((item) => {
                 const Icon = item.icon;
@@ -267,10 +336,11 @@ export default function HRLayout({ children }: { children: React.ReactNode }) {
                   <Link
                     key={item.id}
                     href={item.path}
-                    className="flex items-center space-x-3 p-3 rounded-xl transition-all duration-200 group text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                    onClick={() => setSidebarOpen(false)}
+                    className="flex items-center space-x-3 p-3 rounded-lg transition-colors text-sm font-medium text-slate-700 hover:bg-slate-50 hover:text-slate-900"
                   >
-                    <Icon className="w-5 h-5 transition-colors text-slate-400 group-hover:text-slate-600" />
-                    <span className="text-sm font-medium">{item.label}</span>
+                    <Icon className="w-5 h-5 flex-shrink-0 text-slate-400" />
+                    <span className="truncate">{item.label}</span>
                   </Link>
                 );
               })}
@@ -280,10 +350,17 @@ export default function HRLayout({ children }: { children: React.ReactNode }) {
 
 
         {/* Main Content */}
-        <main className="flex-1">
+        <main className="flex-1 min-w-0">
           {children}
         </main>
       </div>
     </div>
   );
 }
+
+
+
+
+
+
+

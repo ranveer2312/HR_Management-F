@@ -1,6 +1,7 @@
 'use client';
+
 import React, { useState, useEffect } from 'react';
-import Image from 'next/image';
+import Image from 'next/image'; // <-- Import the Image component
 import {
   Search,
   Plus,
@@ -17,9 +18,10 @@ import {
 } from 'lucide-react';
 import { APIURL } from '@/constants/api';
 import toast, { Toaster } from 'react-hot-toast';
+import Loader from '@/components/Loader';
 
 import axios from 'axios';
- 
+
 interface Employee {
   id: string;
   employeeId: string;
@@ -34,15 +36,16 @@ interface Employee {
   position: string;
   department: string;
   joiningDate: string; // YYYY-MM-DD
+  //added DOB
+  dateOfBirth?: string; // YYYY-MM-DD
   status: 'Active' | 'Joining' | 'Exit';
- 
 }
- 
+
 interface ApiEmployeeResponse extends Omit<Employee, 'joiningDate' | 'status'> {
   joiningDate: [number, number, number] | string;
   status: string;
 }
- 
+
 const transformEmployeeFromApiResponse = (apiEmployee: ApiEmployeeResponse): Employee => {
   let formattedDate = '';
   
@@ -92,7 +95,7 @@ const transformEmployeeFromApiResponse = (apiEmployee: ApiEmployeeResponse): Emp
 };
 
 const API_BASE_URL = `${APIURL}/api/employees`;
- 
+
 const employeesAPI = {
   getAll: async (): Promise<Employee[]> => {
     const res = await fetch(API_BASE_URL);
@@ -100,41 +103,41 @@ const employeesAPI = {
     const data: ApiEmployeeResponse[] = await res.json();
     return data.map(transformEmployeeFromApiResponse);
   },
- 
+  
   create: async (employee: Omit<Employee, 'id'>, profilePhotoFile?: File | null): Promise<Employee> => {
     const formData = new FormData();
     formData.append('employee', JSON.stringify(employee));
     if (profilePhotoFile) {
       formData.append('photo', profilePhotoFile);
     }
-   
+    
     const res = await fetch(API_BASE_URL, {
       method: 'POST',
       body: formData,
     });
- 
+
     if (!res.ok) throw new Error('Failed to create employee');
     const data: ApiEmployeeResponse = await res.json();
     return transformEmployeeFromApiResponse(data);
   },
- 
+  
   update: async (id: string, employee: Omit<Employee, 'id'>, profilePhotoFile?: File | null): Promise<Employee> => {
     const formData = new FormData();
     formData.append('employee', JSON.stringify(employee));
     if (profilePhotoFile) {
       formData.append('photo', profilePhotoFile);
     }
- 
+
     const res = await fetch(`${API_BASE_URL}/${id}`, {
       method: 'PUT',
       body: formData,
     });
- 
+
     if (!res.ok) throw new Error('Failed to update employee');
     const data: ApiEmployeeResponse = await res.json();
     return transformEmployeeFromApiResponse(data);
   },
- 
+  
   delete: async (id: string): Promise<void> => {
     const res = await fetch(`${API_BASE_URL}/${id}`, {
       method: 'DELETE',
@@ -142,7 +145,7 @@ const employeesAPI = {
     if (!res.ok) throw new Error('Failed to delete employee');
   },
 };
- 
+
 // Add axios-based multi-part form data functions
 const submitEmployee = async (employeeObj: Omit<Employee, 'id'>, photoFile?: File | null) => {
   const formData = new FormData();
@@ -158,9 +161,15 @@ const submitEmployee = async (employeeObj: Omit<Employee, 'id'>, photoFile?: Fil
     });
     return response.data;
   } catch (error: unknown) {
-    throw (error as { response?: { data?: unknown } }).response?.data || (error as Error).message;
+    console.error('Submit employee error:', error);
+    if (axios.isAxiosError(error)) {
+      const message = error.response?.data?.message || error.response?.data || error.message;
+      throw new Error(typeof message === 'string' ? message : 'Failed to create employee');
+    }
+    throw new Error(error instanceof Error ? error.message : 'Failed to create employee');
   }
 };
+
 
 const updateEmployee = async (id: string, employeeObj: Omit<Employee, 'id'>, photoFile?: File | null) => {
   const formData = new FormData();
@@ -176,12 +185,17 @@ const updateEmployee = async (id: string, employeeObj: Omit<Employee, 'id'>, pho
     });
     return response.data;
   } catch (error: unknown) {
-    throw (error as { response?: { data?: unknown } }).response?.data || (error as Error).message;
+    console.error('Update employee error:', error);
+    if (axios.isAxiosError(error)) {
+      const message = error.response?.data?.message || error.response?.data || error.message;
+      throw new Error(typeof message === 'string' ? message : 'Failed to update employee');
+    }
+    throw new Error(error instanceof Error ? error.message : 'Failed to update employee');
   }
 };
- 
+
 type ModalType = 'add' | 'edit' | 'view';
- 
+
 export default function JoiningPage() {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -192,6 +206,7 @@ export default function JoiningPage() {
   const [selectedDepartment, setSelectedDepartment] = useState<string>('all');
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
   const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [profilePhotoFile, setProfilePhotoFile] = useState<File | null>(null);
@@ -200,25 +215,25 @@ export default function JoiningPage() {
   // Error boundary state
   const [hasError, setHasError] = useState(false);
   const departmentOptions = [
-     'Sales and marketing', 'IT', 'Backend operations', 'design and development', 'HR', 'Manpower and internship', 'Other'
+      'Sales and marketing', 'IT', 'Backend operations', 'design and development', 'HR', 'Manpower and internship', 'Other'
   ];
   const bloodGroupOptions = [
     '', 'A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'
   ];
   const [formError, setFormError] = useState('');
- 
+  
   // Add country code options
   const countryCodeOptions = ['+91', '+1', '+44', '+61', '+81', '+971', '+49', '+86', '+33', '+7'];
   const [countryCode, setCountryCode] = useState<string>(countryCodeOptions[0]);
   const [phoneNumberOnly, setPhoneNumberOnly] = useState<string>('');
- 
+  
   // Add a state for employee ID error
   const [employeeIdError, setEmployeeIdError] = useState('');
   // Add a state for employee ID prefix
   const [employeeIdPrefix, setEmployeeIdPrefix] = useState('EMPTA');
- 
+  
   const isViewMode = modalType === 'view';
- 
+  
   useEffect(() => {
     const fetchEmployees = async () => {
       setIsLoading(true);
@@ -238,13 +253,13 @@ export default function JoiningPage() {
     };
     fetchEmployees();
   }, []);
- 
+  
   // Update formData.phoneNumber when either changes
   useEffect(() => {
     setFormData({ ...formData, phoneNumber: countryCode + phoneNumberOnly });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [countryCode, phoneNumberOnly]);
- 
+  
   // Real-time check for duplicate Employee ID and enforce 'EMP' prefix
   useEffect(() => {
     if (!formData.employeeId) {
@@ -266,7 +281,7 @@ export default function JoiningPage() {
       setEmployeeIdError('');
     }
   }, [formData, employees, modalType, selectedEmployee]);
- 
+  
   const openModal = (type: ModalType, employee?: Employee) => {
     setModalType(type);
     setSelectedEmployee(employee || null);
@@ -313,6 +328,7 @@ export default function JoiningPage() {
         position: '',
         department: '',
         joiningDate: '',
+        dateOfBirth: '',
         status: 'Active',
         profilePhotoUrl: '',
       });
@@ -334,7 +350,7 @@ export default function JoiningPage() {
     }
     setShowModal(true);
   };
- 
+  
   const closeModal = () => {
     setShowModal(false);
     setSelectedEmployee(null);
@@ -342,7 +358,7 @@ export default function JoiningPage() {
     setProfilePhotoFile(null);
     setProfilePhotoPreview(null);
   };
- 
+  
   const handleSubmit = async () => {
     setFormError('');
     if (employeeIdError) {
@@ -408,6 +424,7 @@ export default function JoiningPage() {
       setFormError('Blood Group is required.');
       return;
     }
+    setIsSubmitting(true);
     try {
       if (modalType === 'add') {
         const newEmployee = await submitEmployee(formData as Omit<Employee, 'id'>, profilePhotoFile);
@@ -423,10 +440,22 @@ export default function JoiningPage() {
       closeModal();
     } catch (error) {
       console.error('Error saving employee:', error);
-      toast.error(error instanceof Error ? error.message : 'Failed to save employee');
+      let errorMessage = 'Failed to save employee';
+      
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      } else if (typeof error === 'string') {
+        errorMessage = error;
+      } else if (error && typeof error === 'object') {
+        errorMessage = (error as { message?: string }).message || JSON.stringify(error);
+      }
+      
+      toast.error(errorMessage);
+    } finally {
+      setIsSubmitting(false);
     }
   };
- 
+  
   const handleDelete = async (id: string) => {
     if (window.confirm('Are you sure you want to delete this employee record?')) {
       try {
@@ -439,11 +468,11 @@ export default function JoiningPage() {
       }
     }
   };
- 
+  
   const togglePasswordVisibility = () => {
     setShowPassword(!showPassword);
   };
- 
+  
   const filteredEmployees = employees.filter(employee => {
     const matchesSearch =
       employee.employeeId.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -454,25 +483,25 @@ export default function JoiningPage() {
     const matchesStatus = selectedStatus === 'all' || employee.status === selectedStatus;
     return matchesSearch && matchesDepartment && matchesStatus;
   });
- 
+  
   const departments = [ 'all','Sales and marketing', 'IT', 'Backend operations', 'design and development', 'HR', 'Manpower and internship', 'Other'];
   const statuses = ['all', 'Active', 'Joining', 'Exit'];
- 
+  
   if (isLoading) {
     return (
-      <div className="p-6 flex items-center justify-center">
-        <div className="text-gray-600">Loading employees...</div>
+      <div className="p-6 flex items-center justify-center min-h-screen">
+        <Loader />
       </div>
     );
   }
- 
+  
   if (error || hasError) {
     return (
       <div className="p-6 flex items-center justify-center">
         <div className="text-red-600">
           <p>Error: {error || 'Something went wrong'}</p>
-          <button 
-            onClick={() => window.location.reload()} 
+          <button
+            onClick={() => window.location.reload()}
             className="mt-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
           >
             Reload Page
@@ -481,7 +510,7 @@ export default function JoiningPage() {
       </div>
     );
   }
- 
+  
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <Toaster position="top-right" />
@@ -496,7 +525,7 @@ export default function JoiningPage() {
             <span>New Employee</span>
           </button>
         </div>
- 
+
         {/* Search and Filter Bar */}
         <div className="bg-white p-4 rounded-xl shadow-sm mb-6">
           <div className="flex flex-col md:flex-row gap-4">
@@ -536,20 +565,21 @@ export default function JoiningPage() {
             </div>
           </div>
         </div>
- 
+
         {/* Employees Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3  gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3  gap-6">
           {filteredEmployees.map((employee) => {
             return (
               <div key={employee.id} className="bg-white rounded-xl shadow-sm p-6 hover:shadow-lg transition-all duration-300 flex flex-col">
                 <div className="flex items-center mb-4">
                   {employee.profilePhotoUrl ? (
-                    <div className="w-16 h-16 mr-4 shrink-0 bg-gray-200 rounded-full flex items-center justify-center overflow-hidden relative">
-                      <Image 
+                    <div className="w-16 h-16 mr-4 shrink-0 bg-gray-200 rounded-full flex items-center justify-center overflow-hidden">
+                      <Image
                         src={employee.profilePhotoUrl}
-                        alt={employee.employeeName}
-                        fill
-                        className="object-cover" 
+                        alt={employee.employeeName || 'Employee'}
+                        width={64}
+                        height={64}
+                        className="w-full h-full object-cover"
                       />
                     </div>
                   ) : (
@@ -557,67 +587,67 @@ export default function JoiningPage() {
                       <User className="w-8 h-8 text-gray-400" />
                     </div>
                   )}
-                <div className="flex-1">
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-lg font-semibold text-gray-900">{employee.employeeName}</h3>
-                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${employee.status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
-                      {employee.status}
-                    </span>
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-lg font-semibold text-gray-900">{employee.employeeName}</h3>
+                      <span className={`px-2 py-1 text-xs font-medium rounded-full ${employee.status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
+                        {employee.status}
+                      </span>
+                    </div>
+                    <p className="text-sm text-gray-500">{employee.position}</p>
                   </div>
-                  <p className="text-sm text-gray-500">{employee.position}</p>
+                </div>
+
+                <div className="space-y-2 text-sm text-gray-600 mb-4 flex-grow">
+                  <div className="flex items-center">
+                    <User className="w-4 h-4 mr-2" />
+                    <span>{employee.employeeId}</span>
+                  </div>
+                  <div className="flex items-center">
+                    <Briefcase className="w-4 h-4 mr-2" />
+                    <span>{employee.department}</span>
+                  </div>
+                  <div className="flex items-center">
+                    <Calendar className="w-4 h-4 mr-2" />
+                    <span>Joined: {employee.joiningDate}</span>
+                  </div>
+                  <div className="flex items-center">
+                    <Mail className="w-4 h-4 mr-2" />
+                    <span>{employee.email}</span>
+                  </div>
+                  <div className="flex items-center">
+                    <Phone className="w-4 h-4 mr-2" />
+                    <span>{employee.phoneNumber}</span>
+                  </div>
+                </div>
+
+                <div className="flex space-x-2 mt-auto pt-4 border-t border-gray-100">
+                  <button
+                    onClick={() => openModal('view', employee)}
+                    className="flex-1 bg-blue-50 text-blue-600 px-3 py-2 rounded-lg hover:bg-blue-100 transition-colors flex items-center justify-center space-x-1"
+                  >
+                    <Eye className="w-4 h-4" />
+                    <span>View</span>
+                  </button>
+                  <button
+                    onClick={() => openModal('edit', employee)}
+                    className="flex-1 bg-green-50 text-green-600 px-3 py-2 rounded-lg hover:bg-green-100 transition-colors flex items-center justify-center space-x-1"
+                  >
+                    <Edit className="w-4 h-4" />
+                    <span>Edit</span>
+                  </button>
+                  <button
+                    onClick={() => handleDelete(employee.id)}
+                    className="bg-red-50 text-red-600 px-3 py-2 rounded-lg hover:bg-red-100 transition-colors flex items-center justify-center"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
                 </div>
               </div>
- 
-              <div className="space-y-2 text-sm text-gray-600 mb-4 flex-grow">
-                <div className="flex items-center">
-                  <User className="w-4 h-4 mr-2" />
-                  <span>{employee.employeeId}</span>
-                </div>
-                <div className="flex items-center">
-                  <Briefcase className="w-4 h-4 mr-2" />
-                  <span>{employee.department}</span>
-                </div>
-                <div className="flex items-center">
-                  <Calendar className="w-4 h-4 mr-2" />
-                  <span>Joined: {employee.joiningDate}</span>
-                </div>
-                <div className="flex items-center">
-                  <Mail className="w-4 h-4 mr-2" />
-                  <span>{employee.email}</span>
-                </div>
-                <div className="flex items-center">
-                  <Phone className="w-4 h-4 mr-2" />
-                  <span>{employee.phoneNumber}</span>
-                </div>
-              </div>
- 
-              <div className="flex space-x-2 mt-auto pt-4 border-t border-gray-100">
-                <button
-                  onClick={() => openModal('view', employee)}
-                  className="flex-1 bg-blue-50 text-blue-600 px-3 py-2 rounded-lg hover:bg-blue-100 transition-colors flex items-center justify-center space-x-1"
-                >
-                  <Eye className="w-4 h-4" />
-                  <span>View</span>
-                </button>
-                <button
-                  onClick={() => openModal('edit', employee)}
-                  className="flex-1 bg-green-50 text-green-600 px-3 py-2 rounded-lg hover:bg-green-100 transition-colors flex items-center justify-center space-x-1"
-                >
-                  <Edit className="w-4 h-4" />
-                  <span>Edit</span>
-                </button>
-                <button
-                  onClick={() => handleDelete(employee.id)}
-                  className="bg-red-50 text-red-600 px-3 py-2 rounded-lg hover:bg-red-100 transition-colors flex items-center justify-center"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-          );
-        })}
+            );
+          })}
         </div>
- 
+
         {/* Modal */}
         {showModal && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
@@ -640,18 +670,19 @@ export default function JoiningPage() {
                   </button>
                 </div>
               </div>
- 
+
               <div className="p-6">
                 {isViewMode ? (
                   <div className="space-y-4">
                     <div className="flex justify-center mb-4">
                       {selectedEmployee?.profilePhotoUrl ? (
-                        <div className="w-30 h-30 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden relative">
-                          <Image 
+                        <div className="w-30 h-30 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden">
+                          <Image
                             src={selectedEmployee.profilePhotoUrl}
-                            alt={selectedEmployee.employeeName || 'Employee'} 
-                            fill
-                            className="object-cover" 
+                            alt={selectedEmployee.employeeName || 'Employee'}
+                            width={120}
+                            height={120}
+                            className="w-full h-full object-cover"
                           />
                         </div>
                       ) : (
@@ -673,7 +704,7 @@ export default function JoiningPage() {
                         <p className="text-sm text-gray-600">Email</p>
                         <p className="font-medium">{selectedEmployee?.email}</p>
                       </div>
-                     
+                      
                       <div>
                         <p className="text-sm text-gray-600">Password</p>
                         <div className="flex items-center space-x-2">
@@ -710,8 +741,12 @@ export default function JoiningPage() {
                         <p className="text-sm text-gray-600">Blood Group</p>
                         <p className="font-medium">{selectedEmployee?.bloodGroup}</p>
                       </div>
+                      <div>
+                        <p className="text-sm text-gray-600">Date of Birth</p>
+                        <p className="font-medium">{selectedEmployee?.dateOfBirth || 'Not provided'}</p>
+                      </div>
                     </div>
- 
+
                     <div>
                       <p className="text-sm text-gray-600">Current Address</p>
                       <p className="font-medium">{selectedEmployee?.currentAddress}</p>
@@ -720,10 +755,9 @@ export default function JoiningPage() {
                       <p className="text-sm text-gray-600">Permanent Address</p>
                       <p className="font-medium">{selectedEmployee?.permanentAddress}</p>
                     </div>
- 
-                 
+                    
                   </div>
- 
+
                 ) : (
                   <div className="space-y-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -766,6 +800,7 @@ export default function JoiningPage() {
                             className="w-full px-3 py-2 border-t border-b border-r border-gray-300 rounded-r-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                             value={formData.employeeId ? formData.employeeId.replace(employeeIdPrefix, '') : ''}
                             onChange={e => {
+                              // Only allow alphanumeric characters
                               const val = e.target.value.replace(/[^0-9A-Za-z]/g, '');
                               setFormData({ ...formData, employeeId: employeeIdPrefix + val });
                             }}
@@ -902,6 +937,15 @@ export default function JoiningPage() {
                         </select>
                       </div>
                       <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Date of Birth</label>
+                        <input
+                          type="date"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          value={formData.dateOfBirth || ''}
+                          onChange={(e) => setFormData({...formData, dateOfBirth: e.target.value})}
+                        />
+                      </div>
+                      <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">Profile Photo</label>
                         <div className="flex items-center space-x-3">
                           <input
@@ -930,18 +974,19 @@ export default function JoiningPage() {
                           </button>
                         </div>
                         {profilePhotoPreview && (
-                          <div className="w-30 h-30 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden mt-4 relative">
+                          <div className="w-30 h-30 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden mt-4">
                             <Image
                               src={profilePhotoPreview}
                               alt="Profile Preview"
-                              fill
-                              className="object-cover"
+                              width={120}
+                              height={120}
+                              className="w-full h-full object-cover"
                             />
                           </div>
                         )}
                       </div>
                     </div>
- 
+
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">Current Address</label>
                       <textarea
@@ -960,14 +1005,15 @@ export default function JoiningPage() {
                         onChange={(e) => setFormData({...formData, permanentAddress: e.target.value})}
                       />
                     </div>
-                 
+                    
                     {formError && <div className="text-red-600 text-sm mb-2">{formError}</div>}
                     <div className="flex space-x-3 pt-4">
                       <button
                         type="button"
                         onClick={handleSubmit}
-                        className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors"
+                        className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center"
                         disabled={
+                          isSubmitting ||
                           !formData.employeeId ||
                           !formData.employeeName ||
                           !formData.email ||
@@ -979,7 +1025,13 @@ export default function JoiningPage() {
                           !formData.bloodGroup
                         }
                       >
-                        {modalType === 'add' ? 'Add Employee' : 'Update Employee'}
+                        {isSubmitting ? (
+                          <div className="w-5 h-5">
+                            <Loader />
+                          </div>
+                        ) : (
+                          modalType === 'add' ? 'Add Employee' : 'Update Employee'
+                        )}
                       </button>
                       <button
                         type="button"

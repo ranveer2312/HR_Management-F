@@ -10,7 +10,7 @@ export default function OtherExpensesPage() {
 
   return (
     <div className="container mx-auto py-8">
-      <BackButton href="/finance-manager/dashboard" label="Back to Dashboard" />
+      <BackButton href="/finance-manager/variable-expenses" label="Back to Dashboard" />
       
       <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-6">Other Expenses</h1>
 

@@ -1,8 +1,10 @@
 'use client';
 
+
 import Link from 'next/link';
 import {
   ShoppingCartIcon,
+
 
   ArchiveBoxIcon,
   BookOpenIcon,
@@ -19,7 +21,9 @@ import {
   PencilSquareIcon,
   ChevronRightIcon,
 } from '@heroicons/react/24/outline';
-import { ArrowLeft } from 'lucide-react';
+
+
+
 
 export default function StoreDashboard() {
   const sections = [
@@ -132,15 +136,12 @@ export default function StoreDashboard() {
     },
   ];
 
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="mb-8"> {/* Adjusted spacing for back link */}
-          <Link href="/admin" className="inline-flex items-center text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 transition-colors duration-200">
-            <ArrowLeft className="w-4 h-4 mr-2" /> {/* Slightly smaller icon */}
-            Back to Dashboard
-          </Link>
-        </div>
+       
+
 
         {/* Header Section */}
         <div className="text-center mb-16"> {/* Increased bottom margin */}
@@ -154,6 +155,7 @@ export default function StoreDashboard() {
             Comprehensive inventory management system for all your business needs.
           </p>
         </div>
+
 
         {/* Dashboard Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8"> {/* Consistent gap */}
@@ -176,6 +178,7 @@ export default function StoreDashboard() {
                       </p>
                     </div>
                   </div>
+
 
                   {/* Section Items */}
                   <div className="space-y-4"> {/* Increased space between items */}
@@ -218,3 +221,4 @@ export default function StoreDashboard() {
     </div>
   );
 }
+

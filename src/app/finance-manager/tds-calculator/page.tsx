@@ -1,10 +1,13 @@
 'use client';
 
+
 import { useState, useEffect, useCallback } from 'react';
 import { PlusCircleIcon } from '@heroicons/react/24/outline';
-import BackButton from '@/components/BackButton';
+
+
 import toast, { Toaster } from 'react-hot-toast';
 import { APIURL } from '@/constants/api';
+
 
 interface TDSEntry {
   id: number;
@@ -18,8 +21,10 @@ interface TDSEntry {
   remarks: string;
 }
 
+
 export default function TDSCalculatorPage() {
-  const API_BASE = APIURL + '/api/tds'; // Change if deployed
+  const API_BASE = APIURL + '/api/tds';
+
 
   const [entries, setEntries] = useState<TDSEntry[]>([]);
   const [newEntry, setNewEntry] = useState({
@@ -31,20 +36,24 @@ export default function TDSCalculatorPage() {
     remarks: ''
   });
 
-  // Calculate GST/TDS/Total
+
   const calculateAmounts = () => {
     const taxable = parseFloat(newEntry.taxableAmount) || 0;
     const tdsRate = parseFloat(newEntry.tdsRate) || 0;
     const gstRate = parseFloat(newEntry.gstRate) || 0;
 
+
     const tdsAmount = (taxable * tdsRate) / 100;
     const gstAmount = (taxable * gstRate) / 100;
     const totalPayment = taxable + gstAmount - tdsAmount;
 
+
     return { tdsAmount, gstAmount, totalPayment };
   };
 
+
   const { tdsAmount, gstAmount, totalPayment } = calculateAmounts();
+
 
   const fetchEntries = useCallback(async () => {
     try {
@@ -63,12 +72,12 @@ export default function TDSCalculatorPage() {
     }
   }, [API_BASE]);
 
-  // Fetch all entries on page load
+
   useEffect(() => {
     fetchEntries();
   }, [fetchEntries]);
 
-  // Handle form input changes
+
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
   ) => {
@@ -76,12 +85,13 @@ export default function TDSCalculatorPage() {
     setNewEntry({ ...newEntry, [name]: value });
   };
 
-  // Add new entry (POST)
+
   const handleAddEntry = async () => {
     if (!newEntry.tdsFor || !newEntry.date || !newEntry.taxableAmount) {
       toast.error('Please fill in all required fields.');
       return;
     }
+
 
     const payload = {
       tdsFor: newEntry.tdsFor,
@@ -95,6 +105,7 @@ export default function TDSCalculatorPage() {
       date: newEntry.date
     };
 
+
     try {
       const res = await fetch(API_BASE, {
         method: 'POST',
@@ -102,11 +113,13 @@ export default function TDSCalculatorPage() {
         body: JSON.stringify(payload)
       });
 
+
       if (!res.ok) {
         const errorText = await res.text();
         console.error('Server error:', errorText);
         throw new Error(`Server error: ${res.status}`);
       }
+
 
       toast.success('TDS entry added successfully!');
       setNewEntry({
@@ -129,14 +142,13 @@ export default function TDSCalculatorPage() {
     }
   };
 
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-100">
       <Toaster position="top-right" />
 
-      {/* Header */}
-      <div className="bg-gradient-to-r from-white via-blue-50 to-indigo-50 shadow-xl border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 py-6">
-          <BackButton href="/finance-manager/dashboard" label="Back to Dashboard" />
+
+      <div className="">
           <div className="mt-4 flex items-center justify-between">
             <div>
               <h1 className="text-2xl font-bold text-gray-900">TDS Calculator</h1>
@@ -148,12 +160,9 @@ export default function TDSCalculatorPage() {
             </div>
           </div>
         </div>
-      </div>
 
-      {/* Content */}
+
       <div className="max-w-7xl mx-auto px-4 py-8 space-y-8">
-
-        {/* Add New Entry */}
         <div className="bg-white/80 rounded-2xl shadow-xl p-8 border border-gray-200">
           <h2 className="text-xl font-bold text-gray-900 mb-4">Add New TDS Entry</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
@@ -213,7 +222,7 @@ export default function TDSCalculatorPage() {
           </button>
         </div>
 
-        {/* Entries List */}
+
         <div className="bg-white/80 rounded-2xl shadow-xl p-8 border border-gray-200">
           <h2 className="text-xl font-bold text-gray-900 mb-4">TDS Entries</h2>
           <div className="overflow-x-auto">
@@ -253,8 +262,8 @@ export default function TDSCalculatorPage() {
             </table>
           </div>
         </div>
-
       </div>
     </div>
   );
 }
+

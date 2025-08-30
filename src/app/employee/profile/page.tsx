@@ -47,7 +47,7 @@ interface ApiResponse<T> {
 }
 
 // API Configuration
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://hr-management-b.onrender.com/api';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://hr-management-b.onrender.com';
 
 // Enhanced API Service
 class ApiService {
@@ -329,7 +329,7 @@ export default function EmployeeProfilePage() {
                           <img
                             src={employee.profilePhotoUrl.startsWith('http') 
                               ? employee.profilePhotoUrl 
-                              : `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}${employee.profilePhotoUrl}`
+                              : `${process.env.NEXT_PUBLIC_API_URL || 'https://hr-management-b.onrender.com'}${employee.profilePhotoUrl}`
                             }
                             alt="Profile"
                             className="w-full h-full object-cover"

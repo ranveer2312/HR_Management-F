@@ -6,11 +6,14 @@ import {
   XCircle,
   AlertCircle,
   Search,
-  MapPin,
+ 
 } from 'lucide-react';
+
 import axios from 'axios';
 import { APIURL } from '@/constants/api';
+ 
 
+ 
 interface AttendanceRecord {
   employeeId: string;
   employeeName: string;
@@ -20,7 +23,6 @@ interface AttendanceRecord {
   signOut: string | null;
   status: 'present' | 'absent' | 'half-day' | 'late';
   workHours: number;
-  workLocation: string;
 }
 
 interface Employee {
@@ -36,9 +38,10 @@ interface BackendAttendanceRecord {
   checkOutTime: string | null;
   status: 'present' | 'absent' | 'half-day' | 'late';
   workHours: number;
-  workLocation: string;
 }
+ 
 
+ 
 interface AttendanceStats {
   present?: number;
   late?: number;
@@ -48,17 +51,17 @@ interface AttendanceStats {
   totalWorkHours: number;
   avgWorkHours: string;
 }
-
+ 
 export default function AdminAttendanceDashboard() {
   const [attendanceData, setAttendanceData] = useState<AttendanceRecord[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
+ 
   const [viewMode, setViewMode] = useState<'today' | 'week' | 'month' | 'year'>('year');
   const [selectedDepartment, setSelectedDepartment] = useState<string>('all');
-  const [selectedLocation, setSelectedLocation] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState('');
-
+ 
+ 
   useEffect(() => {
     const fetchAttendance = async () => {
       setLoading(true);
@@ -68,7 +71,7 @@ export default function AdminAttendanceDashboard() {
         const attendanceResponse = await axios.get(`${APIURL}/api/attendance`);
         // Fetch all employees to get names and departments
         const employeesResponse = await axios.get(`${APIURL}/api/employees`);
-       
+        
         const employees = employeesResponse.data;
         const employeeMap = employees.reduce((map: Record<string, Employee>, emp: Employee) => {
           map[emp.employeeId] = emp;
@@ -77,7 +80,7 @@ export default function AdminAttendanceDashboard() {
 
         const mappedData: AttendanceRecord[] = attendanceResponse.data.map((record: BackendAttendanceRecord) => {
           const employee = employeeMap[record.employeeId] || {};
-         
+          
           // Handle date format - could be array or string
           let dateStr: string;
           if (Array.isArray(record.date)) {
@@ -96,10 +99,9 @@ export default function AdminAttendanceDashboard() {
             signOut: record.checkOutTime,
             status: record.status,
             workHours: record.workHours || 0,
-            workLocation: record.workLocation || 'Office',
           };
         });
-       
+        
         setAttendanceData(mappedData);
       } catch (err: Error | unknown) {
         const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred';
@@ -110,7 +112,7 @@ export default function AdminAttendanceDashboard() {
     };
     fetchAttendance();
   }, []);
-
+ 
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'present':
@@ -125,7 +127,7 @@ export default function AdminAttendanceDashboard() {
         return 'bg-gray-100 text-gray-800 border-gray-200';
     }
   };
-
+ 
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'present':
@@ -141,28 +143,13 @@ export default function AdminAttendanceDashboard() {
     }
   };
 
-  const getLocationColor = (location: string) => {
-    switch (location.toLowerCase()) {
-      case 'office':
-        return 'bg-blue-100 text-blue-800 border-blue-200';
-      case 'home':
-      case 'remote':
-        return 'bg-purple-100 text-purple-800 border-purple-200';
-      case 'client site':
-      case 'field':
-        return 'bg-green-100 text-green-800 border-green-200';
-      default:
-        return 'bg-gray-100 text-gray-800 border-gray-200';
-    }
-  };
-
   const formatWorkHours = (hours: number): string => {
     if (hours === 0) return '0 mins';
-   
+    
     const totalMinutes = Math.round(hours * 60);
     const hrs = Math.floor(totalMinutes / 60);
     const mins = totalMinutes % 60;
-   
+    
     if (hrs === 0) {
       return `${mins} mins`;
     } else if (mins === 0) {
@@ -171,7 +158,7 @@ export default function AdminAttendanceDashboard() {
       return `${hrs} hour${hrs > 1 ? 's' : ''} ${mins} mins`;
     }
   };
-
+ 
   const filterDataByDateRange = () => {
     // Create a timezone-safe 'YYYY-MM-DD' string for today's date
     const today = new Date();
@@ -210,33 +197,30 @@ export default function AdminAttendanceDashboard() {
         return attendanceData;
     }
   };
-
+ 
   const filteredData = filterDataByDateRange().filter(record => {
     const matchesDepartment = selectedDepartment === 'all' || record.department === selectedDepartment;
-    const matchesLocation = selectedLocation === 'all' || record.workLocation === selectedLocation;
     const matchesSearch = (record.employeeName?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
-                         (record.department?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
-                         (record.workLocation?.toLowerCase() || '').includes(searchTerm.toLowerCase());
-    return matchesDepartment && matchesLocation && matchesSearch;
+                         (record.department?.toLowerCase() || '').includes(searchTerm.toLowerCase());
+    return matchesDepartment && matchesSearch;
   });
-
+ 
   const calculateStats = () => {
     const stats = filteredData.reduce((acc, record) => {
       acc[record.status] = (acc[record.status] || 0) + 1;
       acc.total = (acc.total || 0) + 1;
       return acc;
     }, {} as Record<string, number>);
-
+ 
     const totalWorkHours = filteredData.reduce((sum, record) => sum + record.workHours, 0);
     const avgWorkHours = stats.total > 0 ? (totalWorkHours / stats.total).toFixed(1) : '0';
    
     return { ...stats, totalWorkHours, avgWorkHours };
   };
-
+ 
   const stats: AttendanceStats = calculateStats();
   const departments = [...new Set(attendanceData.map(record => record.department))];
-  const workLocations = [...new Set(attendanceData.map(record => record.workLocation))];
-
+ 
   const renderStatsCards = () => {
     const statCards = [
       {
@@ -272,7 +256,7 @@ export default function AdminAttendanceDashboard() {
         borderColor: 'border-red-200'
       }
     ];
-
+ 
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         {statCards.map((card, index) => (
@@ -291,7 +275,7 @@ export default function AdminAttendanceDashboard() {
       </div>
     );
   };
-
+ 
   const renderAttendanceTable = () => {
     const groupedData = viewMode === 'today' ?
       filteredData :
@@ -302,9 +286,9 @@ export default function AdminAttendanceDashboard() {
         }
         return acc;
       }, {} as Record<string, AttendanceRecord>);
-
+ 
     const dataToShow = Array.isArray(groupedData) ? groupedData : Object.values(groupedData);
-
+ 
     return (
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
         <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
@@ -333,16 +317,10 @@ export default function AdminAttendanceDashboard() {
                   <option key={dept} value={dept}>{dept}</option>
                 ))}
               </select>
-              <select
-                value={selectedLocation}
-                onChange={(e) => setSelectedLocation(e.target.value)}
-                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              >
-                <option value="all">All Locations</option>
-                {workLocations.map(location => (
-                  <option key={location} value={location}>{location}</option>
-                ))}
-              </select>
+              {/* <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2">
+                <Download className="w-4 h-4" />
+                <span>Export</span>
+              </button> */}
             </div>
           </div>
         </div>
@@ -357,7 +335,6 @@ export default function AdminAttendanceDashboard() {
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sign In</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sign Out</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Work Hours</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Work Location</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
               </tr>
             </thead>
@@ -383,12 +360,6 @@ export default function AdminAttendanceDashboard() {
                     <div className="text-sm text-gray-900">{formatWorkHours(record.workHours)}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getLocationColor(record.workLocation)}`}>
-                      <MapPin className="w-3 h-3 mr-1" />
-                      {record.workLocation}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
                     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getStatusColor(record.status)}`}>
                       {getStatusIcon(record.status)}
                       <span className="ml-1 capitalize">{record.status}</span>
@@ -402,7 +373,7 @@ export default function AdminAttendanceDashboard() {
       </div>
     );
   };
-
+ 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -413,6 +384,7 @@ export default function AdminAttendanceDashboard() {
         )}
         <div className="mb-8">
           <div className="flex items-center justify-between">
+       
             <div>
               <h1 className="text-3xl font-bold text-gray-900 mb-2">Attendance Dashboard</h1>
               <p className="text-gray-600">Monitor and manage employee attendance records</p>
@@ -436,7 +408,7 @@ export default function AdminAttendanceDashboard() {
             </div>
           </div>
         </div>
-
+ 
         {loading ? (
           <div className="text-center py-4">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
@@ -446,7 +418,9 @@ export default function AdminAttendanceDashboard() {
           <>
             {/* Stats Cards */}
             {renderStatsCards()}
-
+ 
+   
+ 
             {/* Attendance Table */}
             {renderAttendanceTable()}
           </>
@@ -455,3 +429,4 @@ export default function AdminAttendanceDashboard() {
     </div>
   );
 }
+ 

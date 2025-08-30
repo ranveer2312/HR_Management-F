@@ -247,7 +247,7 @@ export default function CommissionsPage() {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <Toaster position="top-right" />
-      <BackButton href="/finance-manager/dashboard" label="Back to Dashboard" />
+      <BackButton href="/finance-manager/variable-expenses" label="Back to Dashboard" />
       <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-6">Commissions Expenses</h1>
 
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-8">

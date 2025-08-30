@@ -2,7 +2,6 @@
 import React, { useState, useEffect } from 'react';
 import { File,  Search, Filter,  Download,  X,  User, FileText, CreditCard, Briefcase, GraduationCap, LucideIcon, Eye } from 'lucide-react';
 import { APIURL } from '@/constants/api';
-import { getFileUrl } from '@/app/utils/fileUtils';
 import toast, { Toaster } from 'react-hot-toast';
 
 interface Document {
@@ -169,8 +168,8 @@ export default function DocumentsPage() {
 
   const handleViewDocument = (document: Document) => {
     try {
-      // Construct the view URL using the file utility
-      const viewUrl = getFileUrl(document.fileName);
+      // Construct the view URL using the uploads endpoint
+      const viewUrl = APIURL + `/uploads/${document.fileName}`;
       
       // Open in new tab for viewing
       window.open(viewUrl, '_blank');

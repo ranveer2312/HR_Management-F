@@ -1,7 +1,7 @@
  'use client';
  
 import { useEffect, useState, useCallback } from 'react';
-import { PlusCircleIcon, TrashIcon, PencilSquareIcon, BriefcaseIcon, ArrowDownTrayIcon } from '@heroicons/react/24/outline';
+import { PlusCircleIcon, TrashIcon, PencilSquareIcon, BriefcaseIcon } from '@heroicons/react/24/outline';
 import BackButton from '@/components/BackButton';
 import { APIURL } from '@/constants/api';
 import toast, { Toaster } from 'react-hot-toast';
@@ -216,7 +216,7 @@ export default function SalariesPage() {
       {/* Header */}
       <div className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <BackButton href="/finance-manager/dashboard" label="Back to Dashboard" />
+          <BackButton href="/finance-manager/fixed-expenses" label="Back to Dashboard" />
           <div className="mt-4 flex items-center justify-between">
             <div className="flex items-center space-x-4">
               <div className="p-3 bg-indigo-600 rounded-lg shadow-lg">
@@ -344,44 +344,37 @@ export default function SalariesPage() {
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-300">{expense.remarks}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-300">
                       {expense.documentPath ? (
-                        <div className="flex items-center space-x-2">
-                          <span className="text-green-600 dark:text-green-400">📄 Available</span>
-                          <button
-                            onClick={() => {
-                              try {
-                                if (!expense.documentPath) {
-                                  toast.error('No document path found');
-                                  return;
-                                }
-                                
-                                // Handle different path formats
-                                let url;
-                                if (expense.documentPath.startsWith('http')) {
-                                  url = expense.documentPath;
-                                } else if (expense.documentPath.startsWith('/uploads/')) {
-                                  url = `${APIURL}${expense.documentPath}`;
-                                } else {
-                                  const filename = expense.documentPath.includes('/') ? expense.documentPath.split('/').pop() : expense.documentPath;
-                                  url = `${APIURL}/uploads/${filename}`;
-                                }
-                                
-                                // Create a temporary link element to force download
-                                const link = document.createElement('a');
-                                link.href = url;
-                                link.download = expense.documentPath.includes('/') ? expense.documentPath.split('/').pop() || 'document' : expense.documentPath;
-                                document.body.appendChild(link);
-                                link.click();
-                                document.body.removeChild(link);
-                              } catch {
-                                toast.error('Error downloading document');
+                        <button
+                          onClick={() => {
+                            try {
+                              if (!expense.documentPath) {
+                                toast.error('No document path found');
+                                return;
                               }
-                            }}
-                            className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors p-1 rounded hover:bg-blue-50 dark:hover:bg-blue-900/20"
-                            title="Download document"
-                          >
-                            <ArrowDownTrayIcon className="h-4 w-4" />
-                          </button>
-                        </div>
+                              
+                              console.log('Document path:', expense.documentPath);
+                              
+                              // Handle different path formats
+                              let url;
+                              if (expense.documentPath.startsWith('http')) {
+                                url = expense.documentPath;
+                              } else if (expense.documentPath.startsWith('/uploads/')) {
+                                url = `${APIURL}${expense.documentPath}`;
+                              } else {
+                                const filename = expense.documentPath.includes('/') ? expense.documentPath.split('/').pop() : expense.documentPath;
+                                url = `${APIURL}/uploads/${filename}`;
+                              }
+                              
+                              console.log('Opening URL:', url);
+                              window.open(url, '_blank');
+                            } catch {
+                              toast.error('Error opening document');
+                            }
+                          }}
+                          className="text-indigo-600 hover:text-indigo-800"
+                        >
+                          📄 View
+                        </button>
                       ) : (
                         <span className="text-gray-400">No document</span>
                       )}

@@ -1,16 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import Link from 'next/link';
 import { 
-  FileText, 
-  Building2, 
-  CreditCard, 
   Receipt, 
-  Calculator, 
-  Gavel, 
   LineChart,
-  ArrowRight,
   TrendingUp,
   ShoppingCart
 } from 'lucide-react';
@@ -42,15 +35,15 @@ ChartJS.register(
   Legend
 );
 
-interface Module {
-  id: string;
-  name: string;
-  icon: React.ElementType;
-  color: string;
-  path: string;
-  count: number;
-  apiUrl: string;
-}
+// interface Module {
+//   id: string;
+//   name: string;
+//   icon: React.ElementType;
+//   color: string;
+//   path: string;
+//   count: number;
+//   apiUrl: string;
+// }
 
 interface ChartData {
   labels: string[];
@@ -62,96 +55,11 @@ interface ChartData {
   }[];
 }
 
-const modules: Module[] = [
-  {
-    id: 'sales',
-    name: 'Sales Management',
-    icon: TrendingUp,
-    color: 'bg-green-500',
-    path: '/data-manager/sales',
-    count: 0,
-    apiUrl: APIURL +'/api/sales'
-  },
-  {
-    id: 'purchase',
-    name: 'Purchase Management',
-    icon: ShoppingCart,
-    color: 'bg-orange-500',
-    path: '/data-manager/purchase',
-    count: 0,
-    apiUrl: APIURL +'/api/purchases'
-  },
-  {
-    id: 'logistics',
-    name: 'Logistics Documents',
-    icon: FileText,
-    color: 'bg-green-500',
-    path: '/data-manager/logistics',
-    count: 0,
-    apiUrl: APIURL +'/api/logisticsdocuments'
-  },
-  {
-    id: 'registration',
-    name: 'Company Registration',
-    icon: Building2,
-    color: 'bg-purple-500',
-    path: '/data-manager/registration',
-    count: 0,
-    apiUrl: APIURL +'/api/companyregistrations'
-  },
-  {
-    id: 'bank',
-    name: 'Bank Documents',
-    icon: CreditCard,
-    color: 'bg-yellow-500',
-    path: '/data-manager/bank',
-    count: 0,
-    apiUrl: APIURL +'/api/bankdocuments'
-  },
-  {
-    id: 'billing',
-    name: 'Billing Management',
-    icon: Receipt,
-    color: 'bg-red-500',
-    path: '/data-manager/billing',
-    count: 0,
-    apiUrl: APIURL +'/api/billings'
-  },
-  {
-    id: 'ca',
-    name: 'CA Documents',
-    icon: Calculator,
-    color: 'bg-indigo-500',
-    path: '/data-manager/ca',
-    count: 0,
-    apiUrl: APIURL +'/api/cadocuments'
-  },
-  {
-    id: 'tender',
-    name: 'Tender Management',
-    icon: Gavel,
-    color: 'bg-orange-500',
-    path: '/data-manager/tender',
-    count: 0,
-    apiUrl: APIURL +'/api/tenders'
-  },
-  {
-    id: 'finance',
-    name: 'Finance Reports',
-    icon: LineChart,
-    color: 'bg-teal-500',
-    path: '/data-manager/finance',
-    count: 0,
-    apiUrl: APIURL +'/api/financereports'
-  }
-];
 
 // Define a type for the expected data shape
 type MonthlyDataItem = { [key: string]: string | number | undefined };
 
 export default function DataManagerDashboard() {
-  const [moduleCounts, setModuleCounts] = useState<{ [key: string]: number }>({});
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
   const [authChecked, setAuthChecked] = useState(false);
@@ -203,27 +111,9 @@ export default function DataManagerDashboard() {
   useEffect(() => {
     if (!authChecked) return;
     const fetchData = async () => {
-      setLoading(true);
       setError(null);
-      const counts: { [key: string]: number } = {};
 
       try {
-        // Fetch module counts
-        await Promise.all(
-          modules.map(async (module) => {
-            try {
-              const response = await fetch(module.apiUrl);
-              if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-              }
-              const data = await response.json();
-              counts[module.id] = Array.isArray(data) ? data.length : 0;
-            } catch (e) {
-              console.error(`Error fetching count for ${module.name}:`, e);
-              counts[module.id] = 0;
-            }
-          })
-        );
 
         // Fetch sales data for charts
         const salesResponse = await fetch(APIURL + `/api/sales`);
@@ -301,11 +191,8 @@ export default function DataManagerDashboard() {
           }]
         });
 
-        setModuleCounts(counts);
       } catch (e: unknown) {
         setError(`Failed to fetch data: ${e instanceof Error ? e.message : 'Unknown error'}`);
-      } finally {
-        setLoading(false);
       }
     };
 
@@ -342,164 +229,217 @@ export default function DataManagerDashboard() {
   };
 
   return (
-    <div className="space-y-6">
-      {/* Charts Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8">
-        {/* Sales Trend Chart */}
-        <div className="bg-white p-6 rounded-lg shadow-sm">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Sales Trend</h3>
-          <div className="h-80">
-            <Line
-              data={salesData}
-              options={{
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                  legend: {
-                    position: 'top' as const,
-                  },
-                  title: {
-                    display: false,
-                  },
-                },
-                scales: {
-                  y: {
-                    beginAtZero: true,
-                    ticks: {
-                      callback: (value) => `$${value.toLocaleString()}`,
-                    },
-                  },
-                },
-              }}
-            />
-          </div>
-        </div>
-
-        {/* Purchase Trend Chart */}
-        <div className="bg-white p-6 rounded-lg shadow-sm">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Purchase Trend</h3>
-          <div className="h-80">
-            <Line
-              data={purchaseData}
-              options={{
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                  legend: {
-                    position: 'top' as const,
-                  },
-                  title: {
-                    display: false,
-                  },
-                },
-                scales: {
-                  y: {
-                    beginAtZero: true,
-                    ticks: {
-                      callback: (value) => `$${value.toLocaleString()}`,
-                    },
-                  },
-                },
-              }}
-            />
-            {error && error.toLowerCase().includes('purchase') && (
-              <div className="text-red-600 text-center mt-4">{error}</div>
-            )}
-          </div>
-        </div>
-
-        {/* Payment Status Distribution */}
-        <div className="bg-white p-6 rounded-lg shadow-sm">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Payment Status Distribution</h3>
-          <div className="h-80">
-            <Doughnut
-              data={paymentStatusData}
-              options={{
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                  legend: {
-                    position: 'right' as const,
-                  },
-                },
-              }}
-            />
-          </div>
-        </div>
-
-        {/* Monthly Comparison */}
-        <div className="bg-white p-6 rounded-lg shadow-sm">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Monthly Sales vs Purchases</h3>
-          <div className="h-80">
-            <Bar
-              data={{
-                labels: salesData.labels,
-                datasets: [
-                  {
-                    label: 'Sales',
-                    data: salesData.datasets[0].data,
-                    backgroundColor: '#36a2eb',
-                  },
-                  {
-                    label: 'Purchases',
-                    data: purchaseData.datasets[0].data,
-                    backgroundColor: '#ff6384',
-                  },
-                ],
-              }}
-              options={{
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                  legend: {
-                    position: 'top' as const,
-                  },
-                },
-                scales: {
-                  y: {
-                    beginAtZero: true,
-                    ticks: {
-                      callback: (value) => `$${value.toLocaleString()}`,
-                    },
-                  },
-                },
-              }}
-            />
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+      {/* Header Section */}
+      <div className="bg-white/80 backdrop-blur-sm border-b border-gray-200/50 sticky top-0 z-10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-8">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
+            <div>
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-gray-900 via-blue-800 to-indigo-800 bg-clip-text text-transparent">
+                Data Management Hub
+              </h1>
+              <p className="text-gray-600 mt-2 text-base sm:text-lg">Comprehensive business intelligence and document management</p>
+            </div>
+            <div className="flex items-center space-x-2 bg-gradient-to-r from-blue-500 to-indigo-600 text-white px-3 sm:px-4 py-2 rounded-full text-sm font-medium w-fit">
+              <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+              <span>Live Data</span>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Modules Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-8">
-        {!authChecked ? (
-          <div className="col-span-full text-center py-8 text-gray-600">Checking authentication...</div>
-        ) : loading ? (
-          <div className="col-span-full text-center py-8 text-gray-600">Loading module counts...</div>
-        ) : error ? (
-          <div className="col-span-full text-center py-8 text-red-600">{error}</div>
-        ) : (
-          modules.map((module) => (
-            <Link
-              key={module.id}
-              href={module.path}
-              className="bg-white p-6 rounded-lg shadow-sm hover:shadow-md transition-shadow"
-            >
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900">{module.name}</h3>
-                  <p className="text-2xl font-bold text-gray-900 mt-2">{moduleCounts[module.id] || 0}</p>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-8 space-y-6 sm:space-y-8">
+        {/* Analytics Dashboard */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 lg:gap-8">
+          {/* Sales Trend Chart */}
+          <div className="bg-white/70 backdrop-blur-sm p-4 sm:p-6 lg:p-8 rounded-2xl shadow-xl border border-white/20 hover:shadow-2xl transition-all duration-300">
+            <div className="flex items-center justify-between mb-4 sm:mb-6">
+              <h3 className="text-lg sm:text-xl font-bold text-gray-900">Sales Performance</h3>
+              <div className="p-2 bg-gradient-to-r from-emerald-500 to-green-600 rounded-lg">
+                <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+              </div>
+            </div>
+            <div className="h-64 sm:h-80">
+              <Line
+                data={salesData}
+                options={{
+                  responsive: true,
+                  maintainAspectRatio: false,
+                  plugins: {
+                    legend: { position: 'top' as const },
+                    title: { display: false },
+                  },
+                  scales: {
+                    y: {
+                      beginAtZero: true,
+                      grid: { color: 'rgba(0,0,0,0.05)' },
+                      ticks: { callback: (value) => `$${value.toLocaleString()}` },
+                    },
+                    x: { grid: { color: 'rgba(0,0,0,0.05)' } },
+                  },
+                }}
+              />
+            </div>
+          </div>
+
+          {/* Purchase Trend Chart */}
+          <div className="bg-white/70 backdrop-blur-sm p-4 sm:p-6 lg:p-8 rounded-2xl shadow-xl border border-white/20 hover:shadow-2xl transition-all duration-300">
+            <div className="flex items-center justify-between mb-4 sm:mb-6">
+              <h3 className="text-lg sm:text-xl font-bold text-gray-900">Purchase Analytics</h3>
+              <div className="p-2 bg-gradient-to-r from-orange-500 to-red-500 rounded-lg">
+                <ShoppingCart className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+              </div>
+            </div>
+            <div className="h-64 sm:h-80">
+              <Line
+                data={purchaseData}
+                options={{
+                  responsive: true,
+                  maintainAspectRatio: false,
+                  plugins: {
+                    legend: { position: 'top' as const },
+                    title: { display: false },
+                  },
+                  scales: {
+                    y: {
+                      beginAtZero: true,
+                      grid: { color: 'rgba(0,0,0,0.05)' },
+                      ticks: { callback: (value) => `$${value.toLocaleString()}` },
+                    },
+                    x: { grid: { color: 'rgba(0,0,0,0.05)' } },
+                  },
+                }}
+              />
+              {error && error.toLowerCase().includes('purchase') && (
+                <div className="text-red-600 text-center mt-4 font-medium">{error}</div>
+              )}
+            </div>
+          </div>
+
+          {/* Payment Status Distribution */}
+          <div className="bg-white/70 backdrop-blur-sm p-4 sm:p-6 lg:p-8 rounded-2xl shadow-xl border border-white/20 hover:shadow-2xl transition-all duration-300">
+            <div className="flex items-center justify-between mb-4 sm:mb-6">
+              <h3 className="text-lg sm:text-xl font-bold text-gray-900">Payment Status</h3>
+              <div className="p-2 bg-gradient-to-r from-red-500 to-pink-600 rounded-lg">
+                <Receipt className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+              </div>
+            </div>
+            <div className="h-64 sm:h-80">
+              <Doughnut
+                data={paymentStatusData}
+                options={{
+                  responsive: true,
+                  maintainAspectRatio: false,
+                  plugins: {
+                    legend: { position: 'right' as const },
+                  },
+                }}
+              />
+            </div>
+          </div>
+
+          {/* Monthly Comparison */}
+          <div className="bg-white/70 backdrop-blur-sm p-4 sm:p-6 lg:p-8 rounded-2xl shadow-xl border border-white/20 hover:shadow-2xl transition-all duration-300">
+            <div className="flex items-center justify-between mb-4 sm:mb-6">
+              <h3 className="text-lg sm:text-xl font-bold text-gray-900">Monthly Comparison</h3>
+              <div className="p-2 bg-gradient-to-r from-teal-500 to-cyan-600 rounded-lg">
+                <LineChart className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+              </div>
+            </div>
+            <div className="h-64 sm:h-80">
+              <Bar
+                data={{
+                  labels: salesData.labels,
+                  datasets: [
+                    {
+                      label: 'Sales',
+                      data: salesData.datasets[0].data,
+                      backgroundColor: 'rgba(59, 130, 246, 0.8)',
+                      borderRadius: 8,
+                    },
+                    {
+                      label: 'Purchases',
+                      data: purchaseData.datasets[0].data,
+                      backgroundColor: 'rgba(239, 68, 68, 0.8)',
+                      borderRadius: 8,
+                    },
+                  ],
+                }}
+                options={{
+                  responsive: true,
+                  maintainAspectRatio: false,
+                  plugins: { legend: { position: 'top' as const } },
+                  scales: {
+                    y: {
+                      beginAtZero: true,
+                      grid: { color: 'rgba(0,0,0,0.05)' },
+                      ticks: { callback: (value) => `$${value.toLocaleString()}` },
+                    },
+                    x: { grid: { display: false } },
+                  },
+                }}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Management Modules */}
+        {/* <div className="space-y-6">
+          <div className="text-center">
+            <h2 className="text-3xl font-bold text-gray-900 mb-2">Management Modules</h2>
+            <p className="text-gray-600">Access and manage your business operations</p>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {!authChecked ? (
+              <div className="col-span-full text-center py-12">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                <p className="text-gray-600 font-medium">Checking authentication...</p>
+              </div>
+            ) : loading ? (
+              <div className="col-span-full text-center py-12">
+                <div className="animate-pulse space-y-4">
+                  <div className="h-4 bg-gray-300 rounded w-1/4 mx-auto"></div>
+                  <div className="h-4 bg-gray-300 rounded w-1/2 mx-auto"></div>
                 </div>
-                <div className={`p-3 rounded-lg ${module.color}`}>
-                  <module.icon className="w-6 h-6 text-white" />
+                <p className="text-gray-600 font-medium mt-4">Loading module data...</p>
+              </div>
+            ) : error ? (
+              <div className="col-span-full text-center py-12">
+                <div className="bg-red-50 border border-red-200 rounded-xl p-6 max-w-md mx-auto">
+                  <p className="text-red-600 font-medium">{error}</p>
                 </div>
               </div>
-              <div className="mt-4 flex items-center text-blue-600">
-                <span className="text-sm font-medium">View Details</span>
-                <ArrowRight className="w-4 h-4 ml-2" />
-              </div>
-            </Link>
-          ))
-        )}
+            ) : (
+              modules.map((module) => (
+                <Link
+                  key={module.id}
+                  href={module.path}
+                  className="group bg-white/70 backdrop-blur-sm p-6 rounded-2xl shadow-lg border border-white/20 hover:shadow-2xl hover:scale-105 transition-all duration-300"
+                >
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex-1">
+                      <h3 className="text-lg font-bold text-gray-900 group-hover:text-blue-600 transition-colors">
+                        {module.name}
+                      </h3>
+                      <p className="text-3xl font-bold text-gray-800 mt-2">
+                        {moduleCounts[module.id] || 0}
+                      </p>
+                      <p className="text-sm text-gray-500 mt-1">Total Records</p>
+                    </div>
+                    <div className={`p-4 rounded-xl ${module.color} group-hover:scale-110 transition-transform duration-300 shadow-lg`}>
+                      <module.icon className="w-6 h-6 text-white" />
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between pt-4 border-t border-gray-100">
+                    <span className="text-sm font-medium text-blue-600 group-hover:text-blue-700">Manage Records</span>
+                    <ArrowRight className="w-4 h-4 text-blue-600 group-hover:translate-x-1 transition-transform" />
+                  </div>
+                </Link> */}
+              {/* ))
+            )}
+          </div>
+        </div> */}
       </div>
     </div>
   );

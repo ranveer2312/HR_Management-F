@@ -1,6 +1,5 @@
 'use client';
 
-
 import React, { useState, useEffect } from 'react';
 import {
   Users,
@@ -12,19 +11,14 @@ import {
   X,
   Eye,
   EyeOff,
-  Plus,
   ChevronRight,
   Download,
   Settings,
   Clock,
-  Award,
-  Target,
-  BarChart3,
   PieChart,
   Activity
 } from 'lucide-react';
 import { APIURL } from '@/constants/api';
-
 
 interface Employee {
   id: number;
@@ -36,14 +30,12 @@ interface Employee {
   position: string;
 }
 
-
 interface AttendanceData {
   day: string;
   present: number;
   absent: number;
   late: number;
 }
-
 
 interface LeaveRequest {
   id: number;
@@ -54,8 +46,7 @@ interface LeaveRequest {
   endDate: string;
 }
 
-
-interface Activity {
+interface RecentActivity {
   id: string;
   name: string;
   category: string;
@@ -63,7 +54,6 @@ interface Activity {
   activityDate: string;
   description: string;
 }
-
 
 // Metric Card Component
 interface MetricCardProps {
@@ -76,12 +66,11 @@ interface MetricCardProps {
   trend?: number[];
 }
 
-
 const MetricCard: React.FC<MetricCardProps> = ({ title, value, change, changeType, icon: Icon, subtitle, trend }) => (
   <div className="group relative bg-white rounded-2xl p-6 shadow-sm border border-slate-100 hover:shadow-lg hover:border-slate-200 transition-all duration-300 overflow-hidden">
     {/* Background Pattern */}
     <div className="absolute inset-0 bg-gradient-to-br from-transparent via-transparent to-slate-50/30 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-   
+    
     {/* Trend Sparkline */}
     {trend && (
       <div className="absolute top-4 right-4 w-16 h-8 opacity-20 group-hover:opacity-30 transition-opacity">
@@ -96,7 +85,7 @@ const MetricCard: React.FC<MetricCardProps> = ({ title, value, change, changeTyp
         </svg>
       </div>
     )}
-   
+    
     <div className="relative">
       <div className="flex items-center justify-between mb-4">
         <div className={`inline-flex p-3 rounded-xl bg-gradient-to-br shadow-sm ${
@@ -117,7 +106,7 @@ const MetricCard: React.FC<MetricCardProps> = ({ title, value, change, changeTyp
           {change}
         </div>
       </div>
-     
+      
       <div className="space-y-1">
         <div className="text-3xl font-bold text-slate-900 tracking-tight">{value}</div>
         <div className="text-sm font-medium text-slate-600">{title}</div>
@@ -127,14 +116,12 @@ const MetricCard: React.FC<MetricCardProps> = ({ title, value, change, changeTyp
   </div>
 );
 
-
 // Chart Components
 interface PieChartSegment {
   label: string;
   percentage: number;
   color?: string;
 }
-
 
 const ModernPieChart: React.FC<{ segments: PieChartSegment[]; size?: number; centerLabel?: string }> = ({
   segments,
@@ -144,7 +131,6 @@ const ModernPieChart: React.FC<{ segments: PieChartSegment[]; size?: number; cen
   const colors = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#06B6D4'];
   let cumulativePercentage = 0;
   const total = segments.reduce((sum, seg) => sum + seg.percentage, 0);
-
 
   return (
     <div className="flex items-center justify-center">
@@ -159,13 +145,12 @@ const ModernPieChart: React.FC<{ segments: PieChartSegment[]; size?: number; cen
             stroke="#F8FAFC"
             strokeWidth="20"
           />
-         
+          
           {/* Segments */}
           {segments.map((segment, index) => {
             const strokeDasharray = `${segment.percentage * 2.83} ${283 - segment.percentage * 2.83}`;
             const strokeDashoffset = -cumulativePercentage * 2.83;
             cumulativePercentage += segment.percentage;
-
 
             return (
               <circle
@@ -184,14 +169,14 @@ const ModernPieChart: React.FC<{ segments: PieChartSegment[]; size?: number; cen
             );
           })}
         </svg>
-       
+        
         {/* Center content */}
         <div className="absolute inset-0 flex flex-col items-center justify-center">
           <div className="text-3xl font-bold text-slate-900">{total}</div>
           <div className="text-sm text-slate-500 font-medium">{centerLabel}</div>
         </div>
       </div>
-     
+      
       {/* Legend */}
       <div className="ml-8 space-y-3">
         {segments.map((segment, index) => (
@@ -211,10 +196,9 @@ const ModernPieChart: React.FC<{ segments: PieChartSegment[]; size?: number; cen
   );
 };
 
-
 const AttendanceBarChart: React.FC<{ data: AttendanceData[] }> = ({ data }) => {
   const maxValue = Math.max(...data.map(d => Math.max(d.present, d.absent, d.late)));
- 
+  
   return (
     <div className="h-64 flex items-end justify-center space-x-4 px-4">
       {data.map((item, index) => (
@@ -230,7 +214,7 @@ const AttendanceBarChart: React.FC<{ data: AttendanceData[] }> = ({ data }) => {
                 Present: {item.present}
               </div>
             </div>
-           
+            
             {/* Absent bar */}
             <div className="relative group">
               <div
@@ -241,7 +225,7 @@ const AttendanceBarChart: React.FC<{ data: AttendanceData[] }> = ({ data }) => {
                 Absent: {item.absent}
               </div>
             </div>
-           
+            
             {/* Late bar */}
             <div className="relative group">
               <div
@@ -253,7 +237,7 @@ const AttendanceBarChart: React.FC<{ data: AttendanceData[] }> = ({ data }) => {
               </div>
             </div>
           </div>
-         
+          
           <div className="text-sm font-medium text-slate-600">{item.day}</div>
         </div>
       ))}
@@ -266,7 +250,7 @@ export default function ModernHRDashboard() {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [attendanceData, setAttendanceData] = useState<AttendanceData[]>([]);
   const [leaveRequests, setLeaveRequests] = useState<LeaveRequest[]>([]);
-  const [activities, setActivities] = useState<Activity[]>([]);
+  const [activities, setActivities] = useState<RecentActivity[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddEmployeeModal, setShowAddEmployeeModal] = useState(false);
   const [formData, setFormData] = useState({
@@ -281,6 +265,8 @@ export default function ModernHRDashboard() {
     position: '',
     department: '',
     joiningDate: '',
+    //DOB
+    dateOfBirth: '',
     status: 'Active',
     profilePhotoUrl: ''
   });
@@ -289,20 +275,19 @@ export default function ModernHRDashboard() {
   const [phoneNumberOnly, setPhoneNumberOnly] = useState('');
   const [formError, setFormError] = useState('');
 
-
   // Fetch all HR data
   useEffect(() => {
     const fetchHRData = async () => {
       try {
         setLoading(true);
-       
+        
         // Fetch employees
         const employeesRes = await fetch(`${APIURL}/api/employees`);
         if (employeesRes.ok) {
-          const employeesData = await employeesRes.json();
+          const text = await employeesRes.text();
+          const employeesData = text ? JSON.parse(text) : [];
           setEmployees(employeesData);
         }
-
 
         // Fetch attendance data (mock for now as specific endpoint not found)
         const mockAttendanceData = [
@@ -314,19 +299,19 @@ export default function ModernHRDashboard() {
         ];
         setAttendanceData(mockAttendanceData);
 
-
         // Fetch leave requests
         const leavesRes = await fetch(`${APIURL}/api/leave-requests`);
         if (leavesRes.ok) {
-          const leavesData = await leavesRes.json();
+          const text = await leavesRes.text();
+          const leavesData = text ? JSON.parse(text) : [];
           setLeaveRequests(leavesData);
         }
-
 
         // Fetch activities
         const activitiesRes = await fetch(`${APIURL}/api/activities`);
         if (activitiesRes.ok) {
-          const activitiesData = await activitiesRes.json();
+          const text = await activitiesRes.text();
+          const activitiesData = text ? JSON.parse(text) : [];
           setActivities(activitiesData.slice(0, 3));
         }
       } catch (error) {
@@ -336,10 +321,8 @@ export default function ModernHRDashboard() {
       }
     };
 
-
     fetchHRData();
   }, []);
-
 
   // Calculate metrics
   const totalEmployees = employees.length;
@@ -351,18 +334,16 @@ export default function ModernHRDashboard() {
     return joinDate >= thirtyDaysAgo;
   }).length;
 
-
   // Department distribution
   const deptCounts = employees.reduce((acc: Record<string, number>, emp) => {
     acc[emp.department] = (acc[emp.department] || 0) + 1;
     return acc;
   }, {});
- 
+  
   const departmentData = Object.entries(deptCounts).map(([label, count]: [string, number]) => ({
     label,
     percentage: Math.round((count / totalEmployees) * 100)
   }));
-
 
   // Calculate leave and performance metrics
   const onLeaveToday = leaveRequests.filter(req => {
@@ -370,49 +351,14 @@ export default function ModernHRDashboard() {
     return req.status === 'approved' && req.startDate <= today && req.endDate >= today;
   }).length;
 
-
-  const pendingReviews = 8; // Mock data
-  const birthdaysThisWeek = 47; // Mock data
-
-
+  // No longer needed: const pendingReviews = 8;
+  
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/30">
       {/* Header */}
-      <div className="sticky top-0 z-40 bg-white/80 backdrop-blur-xl border-b border-slate-200/60">
-        <div className="max-w-7xl mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <div className="flex items-center space-x-3">
-                <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-lg flex items-center justify-center">
-                  <Users className="w-5 h-5 text-white" />
-                </div>
-                <h1 className="text-2xl font-bold text-slate-900">Workforce</h1>
-              </div>
-            </div>
-           
-            <div className="flex items-center space-x-4">
-   
-             
-           
-             
-              {/* Add Employee */}
-              <button
-                onClick={() => setShowAddEmployeeModal(true)}
-                className="flex items-center space-x-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-4 py-2 rounded-xl font-medium transition-all duration-200 shadow-sm hover:shadow-lg"
-              >
-                <Plus className="w-4 h-4" />
-                <span>Add Employee</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-
-      <div className="max-w-7xl mx-auto px-6 py-8">
-       
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-8">
         {/* Key Metrics */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8">
           <MetricCard
             title="Total Employees"
             value={loading ? "..." : totalEmployees.toLocaleString()}
@@ -451,54 +397,29 @@ export default function ModernHRDashboard() {
           />
         </div>
 
-
         {/* Quick Stats Row */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+          {/* added responsive */}
+          <div className="bg-white rounded-2xl p-4 sm:p-6 shadow-sm border border-slate-100">
             <div className="flex items-center justify-between">
               <div>
-                <div className="text-2xl font-bold text-slate-900">{loading ? "..." : onLeaveToday}</div>
+                <div className="text-xl sm:text-2xl font-bold text-slate-900">{loading ? "..." : onLeaveToday}</div>
                 <div className="text-sm font-medium text-slate-600">On Leave Today</div>
               </div>
-              <div className="p-3 bg-orange-100 rounded-xl">
-                <Calendar className="w-6 h-6 text-orange-600" />
-              </div>
-            </div>
-          </div>
-         
-          <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="text-2xl font-bold text-slate-900">{birthdaysThisWeek}</div>
-                <div className="text-sm font-medium text-slate-600">Birthday This Week</div>
-              </div>
-              <div className="p-3 bg-pink-100 rounded-xl">
-                <Award className="w-6 h-6 text-pink-600" />
-              </div>
-            </div>
-          </div>
-         
-          <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="text-2xl font-bold text-slate-900">{pendingReviews}</div>
-                <div className="text-sm font-medium text-slate-600">Pending Reviews</div>
-              </div>
-              <div className="p-3 bg-purple-100 rounded-xl">
-                <Target className="w-6 h-6 text-purple-600" />
+              <div className="p-2 sm:p-3 bg-orange-100 rounded-xl">
+                <Calendar className="w-5 h-5 sm:w-6 sm:h-6 text-orange-600" />
               </div>
             </div>
           </div>
         </div>
 
-
         {/* Analytics Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8 mb-6 sm:mb-8">
           {/* Department Distribution */}
-          <div className="lg:col-span-1 bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
-            <div className="flex items-center justify-between mb-6">
+          <div className="lg:col-span-1 bg-white rounded-2xl p-4 sm:p-6 shadow-sm border border-slate-100">
+            <div className="flex items-center justify-between mb-4 sm:mb-6">
               <div>
-                <h3 className="text-lg font-bold text-slate-900">Department Distribution</h3>
+                <h3 className="text-base sm:text-lg font-bold text-slate-900">Department Distribution</h3>
                 <p className="text-sm text-slate-500">Employee allocation</p>
               </div>
               <PieChart className="w-5 h-5 text-slate-400" />
@@ -506,12 +427,11 @@ export default function ModernHRDashboard() {
             <ModernPieChart segments={departmentData} size={180} centerLabel="Depts" />
           </div>
 
-
           {/* Attendance Trends */}
-          <div className="lg:col-span-2 bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
-            <div className="flex items-center justify-between mb-6">
+          <div className="lg:col-span-2 bg-white rounded-2xl p-4 sm:p-6 shadow-sm border border-slate-100">
+            <div className="flex items-center justify-between mb-4 sm:mb-6">
               <div>
-                <h3 className="text-lg font-bold text-slate-900">Attendance Trends</h3>
+                <h3 className="text-base sm:text-lg font-bold text-slate-900">Attendance Trends</h3>
                 <p className="text-sm text-slate-500">Weekly overview</p>
               </div>
               <div className="flex items-center space-x-4">
@@ -538,17 +458,19 @@ export default function ModernHRDashboard() {
           </div>
         </div>
 
-
         {/* Bottom Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
           {/* Quick Actions */}
-          <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-lg font-bold text-slate-900">Quick Actions</h3>
+          <div className="bg-white rounded-2xl p-4 sm:p-6 shadow-sm border border-slate-100">
+            <div className="flex items-center justify-between mb-4 sm:mb-6">
+              <h3 className="text-base sm:text-lg font-bold text-slate-900">Quick Actions</h3>
               <Settings className="w-5 h-5 text-slate-400" />
             </div>
             <div className="space-y-3">
-              <button className="w-full flex items-center justify-between p-4 bg-gradient-to-r from-blue-50 to-indigo-50 hover:from-blue-100 hover:to-indigo-100 rounded-xl transition-all duration-200 group">
+              <button
+                onClick={() => window.location.href = '/hr/leaves'}
+                className="w-full flex items-center justify-between p-4 bg-gradient-to-r from-blue-50 to-indigo-50 hover:from-blue-100 hover:to-indigo-100 rounded-xl transition-all duration-200 group"
+              >
                 <div className="flex items-center space-x-3">
                   <div className="p-2 bg-blue-500 rounded-lg">
                     <Calendar className="w-4 h-4 text-white" />
@@ -560,21 +482,11 @@ export default function ModernHRDashboard() {
                 </div>
                 <ChevronRight className="w-4 h-4 text-slate-400 group-hover:translate-x-0.5 transition-transform" />
               </button>
-             
-              <button className="w-full flex items-center justify-between p-4 bg-gradient-to-r from-emerald-50 to-green-50 hover:from-emerald-100 hover:to-green-100 rounded-xl transition-all duration-200 group">
-                <div className="flex items-center space-x-3">
-                  <div className="p-2 bg-emerald-500 rounded-lg">
-                    <BarChart3 className="w-4 h-4 text-white" />
-                  </div>
-                  <div className="text-left">
-                    <div className="font-semibold text-slate-900">View Reports</div>
-                    <div className="text-xs text-slate-500">Analytics dashboard</div>
-                  </div>
-                </div>
-                <ChevronRight className="w-4 h-4 text-slate-400 group-hover:translate-x-0.5 transition-transform" />
-              </button>
-             
-              <button className="w-full flex items-center justify-between p-4 bg-gradient-to-r from-purple-50 to-pink-50 hover:from-purple-100 hover:to-pink-100 rounded-xl transition-all duration-200 group">
+              
+              <button
+                onClick={() => window.location.href = '/hr/performance'}
+                className="w-full flex items-center justify-between p-4 bg-gradient-to-r from-purple-50 to-pink-50 hover:from-purple-100 hover:to-pink-100 rounded-xl transition-all duration-200 group"
+              >
                 <div className="flex items-center space-x-3">
                   <div className="p-2 bg-purple-500 rounded-lg">
                     <Activity className="w-4 h-4 text-white" />
@@ -589,11 +501,10 @@ export default function ModernHRDashboard() {
             </div>
           </div>
 
-
           {/* Recent Activity */}
-          <div className="lg:col-span-2 bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-lg font-bold text-slate-900">Recent Activity</h3>
+          <div className="lg:col-span-2 bg-white rounded-2xl p-4 sm:p-6 shadow-sm border border-slate-100">
+            <div className="flex items-center justify-between mb-4 sm:mb-6">
+              <h3 className="text-base sm:text-lg font-bold text-slate-900">Recent Activity</h3>
               <button className="text-blue-600 text-sm hover:text-blue-700 font-medium transition-colors">
                 View All
               </button>
@@ -628,7 +539,6 @@ export default function ModernHRDashboard() {
         </div>
       </div>
 
-
       {/* Add Employee Modal */}
       {showAddEmployeeModal && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
@@ -654,7 +564,6 @@ export default function ModernHRDashboard() {
               </div>
             </div>
 
-
             {/* Modal Content */}
             <div className="p-8 overflow-y-auto max-h-[calc(90vh-120px)]">
               <form className="space-y-6">
@@ -673,10 +582,10 @@ export default function ModernHRDashboard() {
                         className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                         value={formData.employeeId}
                         onChange={(e) => setFormData({...formData, employeeId: e.target.value})}
-                        placeholder="EMP001"
+                        placeholder="Enter Employee ID"
                       />
                     </div>
-                   
+                    
                     <div>
                       <label className="block text-sm font-medium text-slate-700 mb-2">Full Name *</label>
                       <input
@@ -685,10 +594,10 @@ export default function ModernHRDashboard() {
                         className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                         value={formData.employeeName}
                         onChange={(e) => setFormData({...formData, employeeName: e.target.value})}
-                        placeholder="John Doe"
+                        placeholder="Enter the FullName.."
                       />
                     </div>
-                   
+                    
                     <div>
                       <label className="block text-sm font-medium text-slate-700 mb-2">Email Address *</label>
                       <input
@@ -697,10 +606,10 @@ export default function ModernHRDashboard() {
                         className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                         value={formData.email}
                         onChange={(e) => setFormData({...formData, email: e.target.value})}
-                        placeholder="john.doe@company.com"
+                        placeholder="Enter Email Address"
                       />
                     </div>
-                   
+                    
                     <div>
                       <label className="block text-sm font-medium text-slate-700 mb-2">Phone Number *</label>
                       <div className="flex space-x-2">
@@ -725,13 +634,22 @@ export default function ModernHRDashboard() {
                             setPhoneNumberOnly(val);
                             setFormData({...formData, phoneNumber: countryCode + val});
                           }}
-                          placeholder="1234567890"
+                          placeholder="Enter the Phone no"
                         />
                       </div>
                     </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-2">Date of Birth</label>
+                      <input
+                        type="date"
+                        className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                        value={formData.dateOfBirth || ''}
+                        onChange={(e) => setFormData({...formData, dateOfBirth: e.target.value})}
+                      />
+                    </div>
                   </div>
                 </div>
-
 
                 {/* Work Information */}
                 <div>
@@ -748,10 +666,10 @@ export default function ModernHRDashboard() {
                         className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                         value={formData.position}
                         onChange={(e) => setFormData({...formData, position: e.target.value})}
-                        placeholder="Software Engineer"
+                        placeholder="Enter Department"
                       />
                     </div>
-                   
+                    
                     <div>
                       <label className="block text-sm font-medium text-slate-700 mb-2">Department *</label>
                       <select
@@ -769,7 +687,7 @@ export default function ModernHRDashboard() {
                         <option value="Finance">Finance</option>
                       </select>
                     </div>
-                   
+                    
                     <div>
                       <label className="block text-sm font-medium text-slate-700 mb-2">Joining Date *</label>
                       <input
@@ -780,7 +698,7 @@ export default function ModernHRDashboard() {
                         onChange={(e) => setFormData({...formData, joiningDate: e.target.value})}
                       />
                     </div>
-                   
+                    
                     <div>
                       <label className="block text-sm font-medium text-slate-700 mb-2">Employment Status</label>
                       <select
@@ -797,7 +715,6 @@ export default function ModernHRDashboard() {
                     </div>
                   </div>
                 </div>
-
 
                 {/* Security & Additional Info */}
                 <div>
@@ -826,7 +743,7 @@ export default function ModernHRDashboard() {
                         </button>
                       </div>
                     </div>
-                   
+                    
                     <div>
                       <label className="block text-sm font-medium text-slate-700 mb-2">Blood Group</label>
                       <select
@@ -846,7 +763,7 @@ export default function ModernHRDashboard() {
                       </select>
                     </div>
                   </div>
-                 
+                  
                   <div className="mt-6">
                     <label className="block text-sm font-medium text-slate-700 mb-2">Current Address</label>
                     <textarea
@@ -857,7 +774,7 @@ export default function ModernHRDashboard() {
                       placeholder="Enter current residential address"
                     />
                   </div>
-                 
+                  
                   <div className="mt-6">
                     <label className="block text-sm font-medium text-slate-700 mb-2">Permanent Address</label>
                     <textarea
@@ -870,7 +787,6 @@ export default function ModernHRDashboard() {
                   </div>
                 </div>
 
-
                 {/* Error Message */}
                 {formError && (
                   <div className="p-4 bg-red-50 border border-red-200 rounded-xl">
@@ -881,14 +797,13 @@ export default function ModernHRDashboard() {
                   </div>
                 )}
 
-
                 {/* Form Actions */}
                 <div className="flex space-x-4 pt-6 border-t border-slate-200">
                   <button
                     type="button"
                     onClick={async () => {
                       setFormError('');
-                     
+                      
                       // Validation
                       if (!formData.email || !formData.email.includes('@')) {
                         setFormError('Please enter a valid email address.');
@@ -902,16 +817,16 @@ export default function ModernHRDashboard() {
                         setFormError('Phone number must be exactly 10 digits.');
                         return;
                       }
-                     
+                      
                       try {
                         // Simulate API call
                         await new Promise(resolve => setTimeout(resolve, 1000));
-                       
+                        
                         setShowAddEmployeeModal(false);
                         setFormData({
                           employeeId: '', employeeName: '', email: '', password: '',
                           phoneNumber: '', bloodGroup: '', currentAddress: '', permanentAddress: '',
-                          position: '', department: '', joiningDate: '', status: 'Active', profilePhotoUrl: ''
+                          position: '', department: '', joiningDate: '', dateOfBirth: '', status: 'Active', profilePhotoUrl: ''
                         });
                         setPhoneNumberOnly('');
                         setFormError('');
@@ -939,5 +854,3 @@ export default function ModernHRDashboard() {
     </div>
   );
 }
-
-

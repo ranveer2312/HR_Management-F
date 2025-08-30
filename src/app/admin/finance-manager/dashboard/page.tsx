@@ -3,8 +3,9 @@ import Link from 'next/link';
 import {  ArrowLeft } from 'lucide-react';
 import { useState, useEffect } from 'react';
 
-import { 
-  BuildingOfficeIcon, 
+
+import {
+  BuildingOfficeIcon,
   TagIcon,
   ChartBarIcon,
   ArrowTrendingUpIcon,
@@ -14,12 +15,16 @@ import {
 import { APIURL } from '@/constants/api';
 
 
+
+
 interface Expense {
   id: number;
   amount: number;
   date: string;
   description: string;
 }
+
+
 
 
 export default function FinanceManagerDashboard() {
@@ -31,29 +36,44 @@ export default function FinanceManagerDashboard() {
     { name: 'Savings', value: 'Loading...', change: '', icon: ArrowTrendingUpIcon },
   ]);
 
+
   useEffect(() => {
    
+
 
     // Fetch all expense data
     const fetchExpenseData = async () => {
       try {
+        // Helper function to safely parse JSON
+        const safeJsonParse = async (response: Response) => {
+          if (!response.ok) return { data: [] };
+          const text = await response.text();
+          if (!text.trim()) return { data: [] };
+          try {
+            return JSON.parse(text);
+          } catch {
+            return { data: [] };
+          }
+        };
+
         // Fetch fixed expenses
         const fixedExpensesResponses = await Promise.all([
-          fetch(APIURL +`/api/rent`).then(res => res.json()),
-          fetch(APIURL +`/api/electric-bills`).then(res => res.json()),
-          fetch(APIURL +`/api/internet-bills`).then(res => res.json()),
-          fetch(APIURL +`/api/sim-bills`).then(res => res.json()),
-          fetch(APIURL +`/api/salaries`).then(res => res.json()),
+          fetch(APIURL +`/api/rent`).then(safeJsonParse),
+          fetch(APIURL +`/api/electric-bills`).then(safeJsonParse),
+          fetch(APIURL +`/api/internet-bills`).then(safeJsonParse),
+          fetch(APIURL +`/api/sim-bills`).then(safeJsonParse),
+          fetch(APIURL +`/api/salaries`).then(safeJsonParse),
         ]);
 
         // Fetch variable expenses
         const variableExpensesResponses = await Promise.all([
-          fetch(APIURL +`/api/travel`).then(res => res.json()),
-          fetch(APIURL +`/api/expo-advertisements`).then(res => res.json()),
-          fetch(APIURL +`/api/incentives/incentive`).then(res => res.json()),
-          fetch(APIURL +`/api/commissions`).then(res => res.json()),
-          fetch(APIURL +`/api/petty-cash`).then(res => res.json()),
+          fetch(APIURL +`/api/travel`).then(safeJsonParse),
+          fetch(APIURL +`/api/expo-advertisements`).then(safeJsonParse),
+          fetch(APIURL +`/api/incentives/incentive`).then(safeJsonParse),
+          fetch(APIURL +`/api/commissions`).then(safeJsonParse),
+          fetch(APIURL +`/api/petty-cash`).then(safeJsonParse),
         ]);
+
 
         // Extract data arrays from responses and ensure they are arrays
         const fixedExpenses = fixedExpensesResponses.map(response => {
@@ -61,10 +81,12 @@ export default function FinanceManagerDashboard() {
           return Array.isArray(data) ? data : [];
         });
 
+
         const variableExpenses = variableExpensesResponses.map(response => {
           const data = response.data || response;
           return Array.isArray(data) ? data : [];
         });
+
 
         // Calculate totals
         const totalFixedCosts = fixedExpenses.reduce((sum: number, expenses: Expense[]) => {
@@ -74,6 +96,7 @@ export default function FinanceManagerDashboard() {
           }, 0);
         }, 0);
 
+
         const totalVariableCosts = variableExpenses.reduce((sum: number, expenses: Expense[]) => {
           return sum + expenses.reduce((expenseSum: number, expense: Expense) => {
             const amount = typeof expense.amount === 'number' ? expense.amount : 0;
@@ -81,8 +104,10 @@ export default function FinanceManagerDashboard() {
           }, 0);
         }, 0);
 
+
         const monthlyBudget = 25000; // This could also be fetched from an API
         const savings = monthlyBudget - (totalFixedCosts + totalVariableCosts);
+
 
         // Calculate percentage changes (you might want to fetch historical data for accurate changes)
         const calculateChange = (current: number, previous: number) => {
@@ -91,31 +116,32 @@ export default function FinanceManagerDashboard() {
           return `${change > 0 ? '+' : ''}${change.toFixed(0)}%`;
         };
 
+
         // Update stats with calculated values
         setStats([
-          { 
-            name: 'Monthly Budget', 
-            value: `₹${monthlyBudget.toLocaleString('en-IN')}`, 
-            change: '+0%', 
-            icon: BanknotesIcon 
+          {
+            name: 'Monthly Budget',
+            value: `₹${monthlyBudget.toLocaleString('en-IN')}`,
+            change: '+0%',
+            icon: BanknotesIcon
           },
-          { 
-            name: 'Fixed Costs', 
-            value: `₹${totalFixedCosts.toLocaleString('en-IN')}`, 
+          {
+            name: 'Fixed Costs',
+            value: `₹${totalFixedCosts.toLocaleString('en-IN')}`,
             change: calculateChange(totalFixedCosts, totalFixedCosts * 0.9), // Example previous value
-            icon: BuildingOfficeIcon 
+            icon: BuildingOfficeIcon
           },
-          { 
-            name: 'Variable Costs', 
-            value: `₹${totalVariableCosts.toLocaleString('en-IN')}`, 
+          {
+            name: 'Variable Costs',
+            value: `₹${totalVariableCosts.toLocaleString('en-IN')}`,
             change: calculateChange(totalVariableCosts, totalVariableCosts * 0.95), // Example previous value
-            icon: ChartBarIcon 
+            icon: ChartBarIcon
           },
-          { 
-            name: 'Savings', 
-            value: `₹${savings.toLocaleString('en-IN')}`, 
+          {
+            name: 'Savings',
+            value: `₹${savings.toLocaleString('en-IN')}`,
             change: calculateChange(savings, savings * 1.1), // Example previous value
-            icon: ArrowTrendingUpIcon 
+            icon: ArrowTrendingUpIcon
           },
         ]);
       } catch (error) {
@@ -130,8 +156,10 @@ export default function FinanceManagerDashboard() {
       }
     };
 
+
     fetchExpenseData();
   }, []);
+
 
   const financeSections = [
     {
@@ -163,9 +191,11 @@ export default function FinanceManagerDashboard() {
         { name: 'Sales Commissions', link: '/admin/finance-manager/variable-expenses/commissions', icon: '💰' },
         { name: 'petty Cash', link: '/admin/finance-manager/variable-expenses/other', icon: '💰' },
 
+
       ],
     },
   ];
+
 
   // const quickActions = [
   //   {
@@ -203,17 +233,9 @@ export default function FinanceManagerDashboard() {
   //   },
   // ];
 
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
-        <div className="mb-4">
-        <Link
-          href="/admin"
-          className="inline-flex items-center text-gray-600 hover:text-gray-900"
-        >
-          <ArrowLeft className="w-5 h-5 mr-2" />
-          Back to Dashboard
-        </Link>
-      </div>
       {/* Header */}
       <div className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
@@ -236,6 +258,7 @@ export default function FinanceManagerDashboard() {
         </div>
       </div>
 
+
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Stats Overview */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -255,11 +278,13 @@ export default function FinanceManagerDashboard() {
           ))}
         </div>
 
+
         {/* Quick Actions */}
         <div className="mb-8">
           {/* <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Quick Actions</h3> */}
           {/* <QuickActions actions={quickActions} /> */}
         </div>
+
 
         {/* Main Sections */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -281,6 +306,7 @@ export default function FinanceManagerDashboard() {
                   </div>
                   <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-white/20 to-transparent rounded-full -mr-16 -mt-16"></div>
                 </div>
+
 
                 {/* Features Grid */}
                 <div className="p-6">
@@ -305,6 +331,7 @@ export default function FinanceManagerDashboard() {
                   </div>
                 </div>
 
+
                 {/* Section Footer */}
                 <div className="px-6 py-4 bg-gray-50 dark:bg-gray-700/50">
                   <div className="flex items-center justify-between">
@@ -312,8 +339,8 @@ export default function FinanceManagerDashboard() {
                       {section.features.length} categories
                     </span>
                     <button className={`text-sm font-medium ${section.iconColor} hover:underline flex items-center space-x-1`}>
-                    
-                    
+                      <span>View All</span>
+                      <ArrowLeft className="w-3 h-3 rotate-180" />
                     </button>
                   </div>
                 </div>
@@ -325,3 +352,5 @@ export default function FinanceManagerDashboard() {
     </div>
   );
 }
+
+

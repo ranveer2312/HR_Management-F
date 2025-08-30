@@ -288,7 +288,7 @@ export default function InternetBillsPage() {
       {/* Header Section */}
       <div className="bg-gradient-to-r from-white via-blue-50 to-indigo-50 dark:from-gray-800 dark:via-slate-800 dark:to-indigo-900 shadow-xl border-b border-blue-200 dark:border-indigo-700">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <BackButton href="/finance-manager/dashboard" label="Back to Dashboard" />
+          <BackButton href="/finance-manager/fixed-expenses" label="Back to Dashboard" />
           <div className="mt-6 flex items-center justify-between">
             <div className="flex items-center space-x-4">
               <div className="p-3 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl shadow-lg transform hover:scale-105 transition-transform duration-200">
@@ -450,7 +450,50 @@ export default function InternetBillsPage() {
                       <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-2">
                           <span className="text-sm font-medium text-blue-700 dark:text-blue-300">📄 Current Document:</span>
-                          <span className="text-blue-600 dark:text-blue-400 text-sm">Document Available</span>
+                          <button
+                            onClick={() => {
+                              try {
+                                const filename = existingDocumentPath.includes('/') ? existingDocumentPath.split('/').pop() : existingDocumentPath;
+                                if (!filename) {
+                                  toast.error('Invalid document path');
+                                  return;
+                                }
+                                // Try multiple endpoints for compatibility
+                                const encodedFilename = encodeURIComponent(filename);
+                                const urls = [
+                                  `${APIURL}/api/files/${encodedFilename}`,
+                                  `${APIURL}/files/${encodedFilename}`,
+                                  `${APIURL}/api/internet-bills/files/${encodedFilename}`
+                                ];
+                                
+                                // Try first URL, if it fails, try others
+                                const tryUrl = async (urlIndex = 0) => {
+                                  if (urlIndex >= urls.length) {
+                                    toast.error('File not found on server');
+                                    return;
+                                  }
+                                  
+                                  try {
+                                    const response = await fetch(urls[urlIndex], { method: 'HEAD' });
+                                    if (response.ok) {
+                                      window.open(urls[urlIndex], '_blank');
+                                    } else {
+                                      tryUrl(urlIndex + 1);
+                                    }
+                                  } catch {
+                                    tryUrl(urlIndex + 1);
+                                  }
+                                };
+                                
+                                tryUrl();
+                              } catch {
+                                toast.error('Error opening document');
+                              }
+                            }}
+                            className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 underline text-sm"
+                          >
+                            View Document
+                          </button>
                         </div>
                         <span className="text-xs text-blue-600 dark:text-blue-400">Upload new file to replace</span>
                       </div>
@@ -543,33 +586,46 @@ export default function InternetBillsPage() {
                                 toast.error('No document path found');
                                 return;
                               }
-                              
-                              // Handle different path formats
-                              let url;
-                              if (expense.documentPath.startsWith('http')) {
-                                url = expense.documentPath;
-                              } else if (expense.documentPath.startsWith('/uploads/')) {
-                                url = `${APIURL}${expense.documentPath}`;
-                              } else {
-                                const filename = expense.documentPath.includes('/') ? expense.documentPath.split('/').pop() : expense.documentPath;
-                                url = `${APIURL}/uploads/${filename}`;
+                              const filename = expense.documentPath.includes('/') ? expense.documentPath.split('/').pop() : expense.documentPath;
+                              if (!filename) {
+                                toast.error('Invalid document path');
+                                return;
                               }
+                              // Try multiple endpoints for compatibility
+                              const encodedFilename = encodeURIComponent(filename);
+                              const urls = [
+                                `${APIURL}/api/files/${encodedFilename}`,
+                                `${APIURL}/files/${encodedFilename}`,
+                                `${APIURL}/api/internet-bills/files/${encodedFilename}`
+                              ];
                               
-                              // Create a temporary link element to force download
-                              const link = document.createElement('a');
-                              link.href = url;
-                              link.download = expense.documentPath.includes('/') ? expense.documentPath.split('/').pop() || 'document' : expense.documentPath;
-                              document.body.appendChild(link);
-                              link.click();
-                              document.body.removeChild(link);
+                              // Try first URL, if it fails, try others
+                              const tryUrl = async (urlIndex = 0) => {
+                                if (urlIndex >= urls.length) {
+                                  toast.error('File not found on server');
+                                  return;
+                                }
+                                
+                                try {
+                                  const response = await fetch(urls[urlIndex], { method: 'HEAD' });
+                                  if (response.ok) {
+                                    window.open(urls[urlIndex], '_blank');
+                                  } else {
+                                    tryUrl(urlIndex + 1);
+                                  }
+                                } catch {
+                                  tryUrl(urlIndex + 1);
+                                }
+                              };
+                              
+                              tryUrl();
                             } catch {
-                              toast.error('Error downloading document');
+                              toast.error('Error opening document');
                             }
                           }}
-                          className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors px-2 py-1 rounded hover:bg-blue-50 dark:hover:bg-blue-900/20"
-                          title="Download document"
+                          className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 underline"
                         >
-                          View
+                          📄 View
                         </button>
                       ) : (
                         <span className="text-gray-400">No document</span>

@@ -9,8 +9,6 @@ export default function FinanceManagerDashboard() {
           {/* ... existing stats cards ... */}
         </div>
 
-      
-
         {/* ... rest of the existing code ... */}
       </div>
     </div>

@@ -1,15 +1,13 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { 
- 
   ArchiveBoxIcon,
   BookOpenIcon,
   DocumentArrowUpIcon,
   BeakerIcon,
-  PaintBrushIcon,
   WrenchScrewdriverIcon,
   CubeTransparentIcon,
   ChartBarIcon,
@@ -18,11 +16,11 @@ import {
   CpuChipIcon,
   PrinterIcon,
   PencilSquareIcon,
+  ChevronRightIcon,
+  ArrowTrendingUpIcon,
+  ClockIcon,
 } from '@heroicons/react/24/outline';
-import React from 'react';
 import { APIURL } from '@/constants/api';
-
-type SectionColor = 'indigo' | 'teal' | 'rose';
 
 interface ItemData {
   title: string;
@@ -37,7 +35,7 @@ interface SectionData {
   title: string;
   description: string;
   icon: React.ComponentType<{ className?: string }>;
-  color: SectionColor;
+  color: 'blue' | 'emerald' | 'purple' | 'orange';
   count: string;
   items: ItemData[];
 }
@@ -46,163 +44,146 @@ export default function StorePage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [sections, setSections] = useState<SectionData[]>([]);
- 
+  const [totalItems, setTotalItems] = useState(0);
 
-  const initialSections: SectionData[] = [
+  const initialSections = useMemo((): SectionData[] => [
     {
-      title: "Inventory & Asset Management",
-      description: "Manage office supplies and assets",
+      title: "Office Supplies & Assets",
+      description: "Manage daily consumables and fixed office assets",
       icon: PencilSquareIcon,
-      color: "indigo" as SectionColor,
+      color: "blue" as const,
       count: "0",
       items: [
         {
-          title: "Consumables",
-          description: "Daily office supplies and consumables",
+          title: "Daily Consumables",
+          description: "Pens, papers, and office supplies",
           href: "/store/stationary/regular",
           icon: BookOpenIcon,
           count: 0,
-          apiUrl: APIURL +'/store/stationary/regular',
+          apiUrl: APIURL + '/store/stationary/regular',
         },
         {
           title: "Fixed Assets",
-          description: "Permanent office supplies",
+          description: "Permanent office equipment",
           href: "/store/stationary/fixed",
           icon: ArchiveBoxIcon,
           count: 0,
-          apiUrl: APIURL +'/store/stationary/fixed',
+          apiUrl: APIURL + '/store/stationary/fixed',
         },
         {
-          title: "Inventory Transactions",
-          description: "Track office supplies movement",
+          title: "Inventory Tracking",
+          description: "Monitor supply movements",
           href: "/store/stationary/inventory",
           icon: DocumentArrowUpIcon,
           count: 0,
-          apiUrl: APIURL +'/store/stationary/inventory',
+          apiUrl: APIURL + '/store/stationary/inventory',
         }
       ]
     },
     {
-      title: "Laboratory Equipment",
-      description: "Laboratory equipment and supplies management",
+      title: "Laboratory Management",
+      description: "Scientific equipment and laboratory supplies",
       icon: BeakerIcon,
-      color: "teal" as SectionColor,
+      color: "emerald" as const,
       count: "0",
       items: [
         {
-          title: "Lab Equipment",
-          description: "Lab equipment and tools",
+          title: "Lab Instruments",
+          description: "Scientific equipment and tools",
           href: "/store/lab/instruments",
-          icon: PaintBrushIcon,
+          icon: BeakerIcon,
           count: 0,
           apiUrl: APIURL + '/store/lab/instruments',
         },
         {
-          title: "Spare Parts & Modules",
-          description: "Lab parts and components",
+          title: "Components & Parts",
+          description: "Spare parts and modules",
           href: "/store/lab/components",
           icon: WrenchScrewdriverIcon,
           count: 0,
-          apiUrl: APIURL +'/store/lab/components',
+          apiUrl: APIURL + '/store/lab/components',
         },
         {
-          title: "Lab Consumables",
-          description: "Lab consumables and materials",
+          title: "Lab Materials",
+          description: "Consumable lab supplies",
           href: "/store/lab/materials",
           icon: CubeTransparentIcon,
           count: 0,
-          apiUrl: APIURL +'/store/lab/materials',
+          apiUrl: APIURL + '/store/lab/materials',
         },
         {
-          title: "Usage & Movement Logs",
-          description: "Track laboratory inventory movement",
+          title: "Usage Analytics",
+          description: "Track lab inventory usage",
           href: "/store/lab/inventory",
           icon: ChartBarIcon,
           count: 0,
-          apiUrl: APIURL +'/store/lab/inventory',
+          apiUrl: APIURL + '/store/lab/inventory',
         }
       ]
     },
     {
-      title: "Inventory Segments",
-      description: "Permanent office equipment and furniture",
+      title: "IT & Infrastructure",
+      description: "Technology assets and office infrastructure",
       icon: BuildingOfficeIcon,
-      color: "rose" as SectionColor,
+      color: "purple" as const,
       count: "0",
       items: [
         {
-          title: "Office furniture and fixtures",
-          description: "Office furniture and fixtures",
+          title: "Furniture & Fixtures",
+          description: "Office furniture and fittings",
           href: "/store/assets/furniture",
           icon: TableCellsIcon,
           count: 0,
-          apiUrl: APIURL +'/store/assets/furniture',
+          apiUrl: APIURL + '/store/assets/furniture',
         },
         {
-          title: "Computers and electronic systems",
-          description: "Computers and electronic systems",
+          title: "Computer Systems",
+          description: "Laptops, desktops, and servers",
           href: "/store/assets/systems",
           icon: CpuChipIcon,
           count: 0,
-          apiUrl: APIURL +'/store/assets/systems',
+          apiUrl: APIURL + '/store/assets/systems',
         },
         {
-          title: "Printers and other office equipment",
-          description: "Printers and other office equipment",
+          title: "Office Equipment",
+          description: "Printers and peripherals",
           href: "/store/assets/printers",
           icon: PrinterIcon,
           count: 0,
-          apiUrl: APIURL +'/store/assets/printers',
+          apiUrl: APIURL + '/store/assets/printers',
         }
       ]
     },
-    {
-      title: "Materials In/Out",
-      description: "Manage all material movements (in and out)",
-      icon: CubeTransparentIcon, // Using CubeTransparentIcon for materials
-      color: "teal" as SectionColor, // Use teal for visual distinction
-      count: "0",
-      items: [
-        {
-          title: "Materials In/Out",
-          description: "View and manage all material in/out records",
-          href: "/store/materials-in-out",
-          icon: CubeTransparentIcon,
-          count: 0,
-          apiUrl: APIURL + "/api/materials",
-        }
-      ]
-    },
-  ];
+    // {
+    //   title: "Material Flow Control",
+    //   description: "Track all incoming and outgoing materials",
+    //   icon: CubeTransparentIcon,
+    //   color: "orange",
+    //   count: "0",
+    //   items: [
+    //     {
+    //       title: "Material Transactions",
+    //       description: "Complete in/out material records",
+    //       href: "/store/materials-in-out",
+    //       icon: CubeTransparentIcon,
+    //       count: 0,
+    //       apiUrl: APIURL + "/api/materials",
+    //     }
+    //   ]
+    // },
+  ], []);
 
-  // Role and token check before fetching data
-  useEffect(() => {
-    const token = localStorage.getItem('token');
-    const roles = JSON.parse(localStorage.getItem('roles') || '[]');
-
-    if (!token || !roles.includes('STORE')) {
-      router.replace('/login');
-    } else {
-      setLoading(true);
-      fetchAllCounts();
-    }
-    // eslint-disable-next-line
-  }, [router]);
-
-  const fetchAllCounts = async () => {
+  const fetchAllCounts = useCallback(async () => {
     try {
-      // setLoading(true); // Already set in useEffect
       const token = localStorage.getItem('token');
-      // Token is already checked in useEffect, so this is just for headers
       const headers = {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json',
       };
 
-      // Create a copy of initial sections to update
       const updatedSections = [...initialSections];
+      let grandTotal = 0;
       
-      // Fetch counts for each item in each section
       for (let sectionIndex = 0; sectionIndex < updatedSections.length; sectionIndex++) {
         const section = updatedSections[sectionIndex];
         let sectionTotal = 0;
@@ -211,165 +192,251 @@ export default function StorePage() {
           const item = section.items[itemIndex];
           
           try {
-            const response = await fetch(item.apiUrl.replace(APIURL , process.env.NEXT_PUBLIC_API_URL || APIURL), {
+            const response = await fetch(item.apiUrl.replace(APIURL, process.env.NEXT_PUBLIC_API_URL || APIURL), {
               method: 'GET',
               headers,
             });
 
             if (response.ok) {
-              const data = await response.json();
-              // Assuming the API returns an array or object with count/length property
+              // Safe JSON parsing
+              const text = await response.text();
+              let data = [];
+              
+              if (text && text.trim()) {
+                try {
+                  data = JSON.parse(text);
+                } catch (parseError) {
+                  console.error(`JSON parse error for ${item.title}:`, parseError);
+                  data = [];
+                }
+              }
+              
               let count = 0;
               
               if (Array.isArray(data)) {
                 count = data.length;
-              } else if (data && typeof data.count === 'number') {
+              } else if (data?.count) {
                 count = data.count;
-              } else if (data && typeof data.total === 'number') {
+              } else if (data?.total) {
                 count = data.total;
-              } else if (data && typeof data.length === 'number') {
-                count = data.length;
               }
 
               updatedSections[sectionIndex].items[itemIndex].count = count;
               sectionTotal += count;
-            
-
-              // Count active assets (from Capital Office Assets section)
-              if (section.title === "Inventory Segments") {
-                
-              }
-            } else {
-              console.error(`Failed to fetch count for ${item.title}:`, response.statusText);
             }
           } catch (error) {
-            console.error(`Error fetching count for ${item.title}:`, error);
+            console.error(`Error fetching ${item.title}:`, error);
           }
         }
 
-        // Update section total count
         updatedSections[sectionIndex].count = sectionTotal.toString();
+        grandTotal += sectionTotal;
       }
 
-      // Update sections state
       setSections(updatedSections);
-
-    
-
+      setTotalItems(grandTotal);
     } catch (error) {
       console.error('Error fetching counts:', error);
     } finally {
       setLoading(false);
     }
-  };
+  }, [initialSections]);
+
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    let roles = [];
+    
+    try {
+      const rolesString = localStorage.getItem('roles');
+      if (rolesString && rolesString.trim()) {
+        roles = JSON.parse(rolesString);
+      }
+    } catch (error) {
+      console.error('Error parsing roles from localStorage:', error);
+      roles = [];
+    }
+
+    if (!token || !roles.includes('STORE')) {
+      router.replace('/login');
+    } else {
+      fetchAllCounts();
+    }
+  }, [router, fetchAllCounts]);
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600 dark:text-gray-400">Loading store data...</p>
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <div className="relative w-16 h-16 mx-auto">
+            <div className="absolute inset-0 border-4 border-blue-200 dark:border-blue-800 rounded-full animate-pulse"></div>
+            <div className="absolute inset-0 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+          </div>
+          <div>
+            <h3 className="text-xl font-semibold text-gray-900 dark:text-white">Loading Inventory</h3>
+            <p className="text-gray-600 dark:text-gray-400">Fetching store data...</p>
+          </div>
         </div>
       </div>
     );
   }
 
+  const colorSchemes = {
+    blue: {
+      gradient: 'from-blue-500 to-indigo-600',
+      bg: 'from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20',
+      border: 'border-blue-200/50 dark:border-blue-700/50',
+      text: 'text-blue-700 dark:text-blue-300'
+    },
+    emerald: {
+      gradient: 'from-emerald-500 to-teal-600',
+      bg: 'from-emerald-50 to-teal-50 dark:from-emerald-900/20 dark:to-teal-900/20',
+      border: 'border-emerald-200/50 dark:border-emerald-700/50',
+      text: 'text-emerald-700 dark:text-emerald-300'
+    },
+    purple: {
+      gradient: 'from-purple-500 to-pink-600',
+      bg: 'from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20',
+      border: 'border-purple-200/50 dark:border-purple-700/50',
+      text: 'text-purple-700 dark:text-purple-300'
+    },
+    orange: {
+      gradient: 'from-orange-500 to-red-600',
+      bg: 'from-orange-50 to-red-50 dark:from-orange-900/20 dark:to-red-900/20',
+      border: 'border-orange-200/50 dark:border-orange-700/50',
+      text: 'text-orange-700 dark:text-orange-300'
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      {/* Header */}
-     
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-       
-
-        {/* Main Content */}
-        <div className="pb-12">
-          <div className="mb-8">
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-              Inventory Segments
-            </h2>
-            <p className="text-gray-600 dark:text-gray-400">
-              Manage your inventory and assets across different segments
-            </p>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-gray-900 dark:via-slate-900 dark:to-gray-900">
+      {/* Header Section */}
+      <div className="px-4 py-6">
+        <div className="text-center space-y-3">
+          <h1 className="text-2xl font-bold bg-gradient-to-r from-gray-900 via-blue-800 to-indigo-800 dark:from-white dark:via-blue-200 dark:to-indigo-200 bg-clip-text text-transparent">
+            Store Dashboard
+          </h1>
+          <p className="text-sm text-gray-600 dark:text-gray-300 max-w-lg mx-auto">
+            Inventory management system
+          </p>
+        </div>
+        
+        {/* Quick Stats */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-6">
+          <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl rounded-lg p-4 border border-gray-200/50 dark:border-gray-700/50 shadow-lg">
+            <div className="flex items-center space-x-3 sm:flex-col sm:space-x-0 sm:space-y-2 sm:text-center">
+              <div className="p-3 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-lg">
+                <CubeTransparentIcon className="h-5 w-5 text-white" />
+              </div>
+              <div>
+                <p className="text-xl font-bold text-gray-900 dark:text-white">{totalItems}</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Total Items</p>
+              </div>
+            </div>
           </div>
+          
+          <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl rounded-lg p-4 border border-gray-200/50 dark:border-gray-700/50 shadow-lg">
+            <div className="flex items-center space-x-3 sm:flex-col sm:space-x-0 sm:space-y-2 sm:text-center">
+              <div className="p-3 bg-gradient-to-r from-emerald-500 to-teal-600 rounded-lg">
+                <ArrowTrendingUpIcon className="h-5 w-5 text-white" />
+              </div>
+              <div>
+                <p className="text-xl font-bold text-gray-900 dark:text-white">{sections.length}</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Categories</p>
+              </div>
+            </div>
+          </div>
+          
+          <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl rounded-lg p-4 border border-gray-200/50 dark:border-gray-700/50 shadow-lg">
+            <div className="flex items-center space-x-3 sm:flex-col sm:space-x-0 sm:space-y-2 sm:text-center">
+              <div className="p-3 bg-gradient-to-r from-purple-500 to-pink-600 rounded-lg">
+                <ClockIcon className="h-5 w-5 text-white" />
+              </div>
+              <div>
+                <p className="text-xl font-bold text-gray-900 dark:text-white">Live</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Real-time</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
 
-          <div className="space-y-8">
-            {sections.map((section, sectionIndex) => {
-              const IconComponent = section.icon;
-              const colorClasses = {
-                indigo: {
-                  bg: 'bg-indigo-50 dark:bg-indigo-900/20',
-                  border: 'border-indigo-200 dark:border-indigo-800',
-                  icon: 'bg-indigo-500',
-                  badge: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-300'
-                },
-                teal: {
-                  bg: 'bg-teal-50 dark:bg-teal-900/20',
-                  border: 'border-teal-200 dark:border-teal-800',
-                  icon: 'bg-teal-500',
-                  badge: 'bg-teal-100 text-teal-700 dark:bg-teal-900/50 dark:text-teal-300'
-                },
-                rose: {
-                  bg: 'bg-rose-50 dark:bg-rose-900/20',
-                  border: 'border-rose-200 dark:border-rose-800',
-                  icon: 'bg-rose-500',
-                  badge: 'bg-rose-100 text-rose-700 dark:bg-rose-900/50 dark:text-rose-300'
-                }
-              };
-              
-              const colors = colorClasses[section.color];
-              
-              return (
-                <div key={sectionIndex} className={`${colors.bg} ${colors.border} border rounded-2xl p-8`}>
-                  {/* Section Header */}
-                  <div className="flex items-center justify-between mb-6">
-                    <div className="flex items-center space-x-4">
-                      <div className={`w-12 h-12 ${colors.icon} rounded-xl flex items-center justify-center shadow-md`}>
-                        <IconComponent className="w-6 h-6 text-white" />
+      {/* Dashboard Content */}
+      <div className="px-4 pb-8">
+        <div className="space-y-6">
+          {sections.map((section, index) => {
+            const colors = colorSchemes[section.color];
+            const SectionIcon = section.icon;
+            
+            return (
+              <div 
+                key={index}
+                className={`bg-gradient-to-br ${colors.bg} backdrop-blur-xl rounded-xl p-4 border ${colors.border} shadow-xl`}
+                style={{ animationDelay: `${index * 100}ms` }}
+              >
+                {/* Section Header */}
+                <div className="mb-6">
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex items-center space-x-3">
+                      <div className={`p-3 bg-gradient-to-r ${colors.gradient} rounded-lg shadow-lg`}>
+                        <SectionIcon className="h-6 w-6 text-white" />
                       </div>
                       <div>
-                        <h3 className="text-xl font-bold text-gray-900 dark:text-white">
+                        <h2 className="text-xl font-bold text-gray-900 dark:text-white">
                           {section.title}
-                        </h3>
-                        <p className="text-gray-600 dark:text-gray-400 mt-1">
+                        </h2>
+                        <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">
                           {section.description}
                         </p>
                       </div>
                     </div>
-                    <div className={`px-3 py-1 ${colors.badge} rounded-full text-sm font-semibold`}>
-                      {section.count} items
+                    <div className={`px-4 py-2 bg-white/80 dark:bg-gray-800/80 rounded-lg border ${colors.border} shadow-lg text-center`}>
+                      <span className={`text-lg font-bold ${colors.text}`}>
+                        {section.count}
+                      </span>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">items</p>
                     </div>
                   </div>
+                </div>
 
-                  {/* Items Grid */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {section.items.map((item, itemIndex) => {
-                      const ItemIcon = item.icon;
-                      return (
-                        <Link key={itemIndex} href={item.href} className="group">
-                          <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700 hover:shadow-md hover:border-gray-300 dark:hover:border-gray-600 transition-all duration-200 group-hover:-translate-y-1">
-                            <div className="flex items-start justify-between mb-4">
-                              <div className={`w-10 h-10 ${colors.icon} rounded-lg flex items-center justify-center shadow-sm`}>
-                                <ItemIcon className="w-5 h-5 text-white" />
-                              </div>
-                              <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                {/* Items Grid */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {section.items.map((item, itemIndex) => {
+                    const ItemIcon = item.icon;
+                    
+                    return (
+                      <Link key={itemIndex} href={item.href} className="group">
+                        <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl rounded-lg p-5 border border-gray-200/50 dark:border-gray-700/50 shadow-lg hover:shadow-xl transition-all duration-300 group">
+                          <div className="flex items-start justify-between mb-4">
+                            <div className={`p-3 bg-gradient-to-r ${colors.gradient} rounded-lg shadow-md group-hover:scale-110 transition-transform duration-300`}>
+                              <ItemIcon className="h-5 w-5 text-white" />
+                            </div>
+                            <div className="text-right">
+                              <span className="text-2xl font-bold text-gray-900 dark:text-white">
                                 {item.count}
                               </span>
+                              <p className="text-xs text-gray-500 dark:text-gray-400">items</p>
                             </div>
-                            <h4 className="font-semibold text-gray-900 dark:text-white mb-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
-                              {item.title}
-                            </h4>
-                            <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
-                              {item.description}
-                            </p>
                           </div>
-                        </Link>
-                      );
-                    })}
-                  </div>
+                          
+                          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                            {item.title}
+                          </h3>
+                          <p className="text-gray-600 dark:text-gray-300 text-sm mb-4 leading-relaxed">
+                            {item.description}
+                          </p>
+                          
+                          <div className="flex items-center justify-between">
+                            <div className={`h-1 flex-1 bg-gradient-to-r ${colors.gradient} rounded-full opacity-20 group-hover:opacity-100 transition-opacity duration-300`}></div>
+                            <ChevronRightIcon className="h-5 w-5 text-gray-400 group-hover:text-blue-600 dark:group-hover:text-blue-400 group-hover:translate-x-1 transition-all duration-200 ml-2" />
+                          </div>
+                        </div>
+                      </Link>
+                    );
+                  })}
                 </div>
-              );
-            })}
-          </div>
+              </div>
+            );
+          })}
         </div>
       </div>
     </div>

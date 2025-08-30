@@ -13,7 +13,6 @@ import {
   ArrowRight,
   TrendingUp,
   ShoppingCart,
-  ArrowLeft
 } from 'lucide-react';
 import { Bar, Line, Doughnut } from 'react-chartjs-2';
 import {
@@ -326,16 +325,6 @@ export default function DataManagerDashboard() {
 
   return (
     <div className="space-y-6">
-      {/* Back to Dashboard Button */}
-      <div className="mb-4">
-        <Link
-          href="/admin"
-          className="inline-flex items-center text-gray-600 hover:text-gray-900"
-        >
-          <ArrowLeft className="w-5 h-5 mr-2" />
-          Back to Dashboard
-        </Link>
-      </div>
       {/* Charts Section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8">
         {/* Sales Trend Chart */}

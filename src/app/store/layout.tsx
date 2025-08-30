@@ -1,8 +1,10 @@
 'use client';
 
-
-import { useRouter } from 'next/navigation';
-
+import { useRouter, usePathname } from 'next/navigation';
+import { CubeIcon, ArrowRightOnRectangleIcon, CubeTransparentIcon, BookOpenIcon,
+  ArchiveBoxIcon, BeakerIcon, CpuChipIcon, TableCellsIcon, DocumentArrowUpIcon,
+  HomeIcon, Bars3Icon } from '@heroicons/react/24/outline';
+import { useState } from 'react';
 
 export default function StoreLayout({
   children,
@@ -10,40 +12,125 @@ export default function StoreLayout({
   children: React.ReactNode;
 }) {
   const router = useRouter();
-
- 
+  const pathname = usePathname();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const handleLogout = () => {
-   
     router.push('/login');
   };
 
+  const sidebarItems = [
+    { name: 'Dashboard', href: '/store', icon: HomeIcon },
+    { name: 'Office Supplies', href: '/store/stationary/regular', icon: BookOpenIcon },
+    { name: 'Fixed Assets', href: '/store/stationary/fixed', icon: ArchiveBoxIcon },
+    { name: 'Lab Equipment', href: '/store/lab/instruments', icon: BeakerIcon },
+    { name: 'Lab Materials', href: '/store/lab/materials', icon: CubeTransparentIcon },
+    { name: 'IT Assets', href: '/store/assets/systems', icon: CpuChipIcon },
+    { name: 'Furniture', href: '/store/assets/furniture', icon: TableCellsIcon },
+    { name: 'Materials In/Out', href: '/store/materials-in-out', icon: DocumentArrowUpIcon },
+  ];
+
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-    {/* Navigation Bar */}
-    <nav className="bg-gradient-to-r from-blue-600 to-indigo-700 shadow-lg"> {/* Gradient background */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
-          <div className="flex-shrink-0 flex items-center space-x-2"> {/* Added space-x-2 for icon */}
-            {/* <AdminIcon className="h-6 w-6 text-white" /> Uncomment and replace with actual icon */}
-            <h1 className="text-2xl font-extrabold text-white tracking-wide">
-           Inventory Control Panel
-            </h1>
-          </div>
-          <div className="flex items-center">
-            <button
-              onClick={handleLogout}
-              className="px-6 py-2 border-2 border-white text-sm font-semibold rounded-full text-white hover:bg-white hover:text-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-white transition ease-in-out duration-300" // Styled as a pill button with inverse hover
-            >
-              Logout
-            </button>
+    <div className="min-h-screen bg-gray-50">
+      {/* Modern Navigation Bar */}
+      <nav className="fixed top-0 left-0 right-0 z-30 bg-white shadow-lg border-b border-gray-200">
+        <div className="mx-auto px-6 lg:px-8">
+          <div className="flex justify-between items-center h-20">
+            <div className="flex items-center space-x-4">
+              <div className="p-3 rounded-lg bg-blue-600">
+                <CubeIcon className="h-8 w-8 text-white" />
+              </div>
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900">
+                  Inventory Control Panel
+                </h1>
+                <p className="text-sm text-gray-600 font-medium">Advanced inventory management system</p>
+              </div>
+            </div>
+            <div className="flex items-center space-x-4">
+              <button
+                onClick={handleLogout}
+                className="flex items-center space-x-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg shadow transition-colors"
+              >
+                <ArrowRightOnRectangleIcon className="h-5 w-5" />
+                <span>Logout</span>
+              </button>
+            </div>
           </div>
         </div>
-      </div>
-    </nav>
+      </nav>
 
-    {/* Main Content */}
-    <main>{children}</main>
-  </div>
+      <div className="flex">
+        {/* Sidebar */}
+        <div className={`fixed top-20 bottom-0 left-0 z-50 w-72 bg-white border-r border-gray-200 shadow-lg transform transition-transform duration-300 ease-in-out lg:translate-x-0 ${
+            sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+          }`}>
+          
+        
+          
+          {/* Navigation */}
+          <nav className="flex-1 p-4">
+            <div className="mb-4">
+              <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Inventory Management</h3>
+            </div>
+            <div className="space-y-1">
+              {sidebarItems.map((item) => {
+                const Icon = item.icon;
+                const isActive = pathname === item.href;
+                return (
+                  <button
+                    key={item.name}
+                    onClick={() => {
+                      setSidebarOpen(false);
+                      router.push(item.href);
+                    }}
+                    className={`group flex items-center px-3 py-3 text-sm font-medium rounded-lg transition-colors w-full text-left ${
+                      isActive
+                        ? 'bg-blue-50 text-blue-700 border-l-4 border-blue-600'
+                        : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+                    }`}
+                  >
+                    <div className={`p-2 rounded-md mr-3 ${
+                      isActive ? 'bg-blue-100' : 'bg-gray-100 group-hover:bg-gray-200'
+                    }`}>
+                      <Icon className={`w-4 h-4 ${
+                        isActive ? 'text-blue-600' : 'text-gray-500'
+                      }`} />
+                    </div>
+                    <span className="flex-1">{item.name}</span>
+                    {isActive && (
+                      <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </nav>
+          
+      
+        </div>
+        
+        {/* Overlay for mobile */}
+        {sidebarOpen && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden" onClick={() => setSidebarOpen(false)}></div>
+        )}
+        
+        {/* Main Content */}
+        <div className="flex-1 lg:ml-72">
+          {/* Mobile Header */}
+          <div className="lg:hidden bg-white border-b border-gray-200 px-4 py-4 mt-20">
+            <button
+              onClick={() => setSidebarOpen(true)}
+              className="p-2 rounded-lg hover:bg-gray-100"
+            >
+              <Bars3Icon className="h-6 w-6 text-gray-600" />
+            </button>
+          </div>
+          
+          {/* Main Content */}
+          <main className="pt-20 min-h-screen">{children}</main>
+        </div>
+      </div>
+    </div>
   );
-} 
+}

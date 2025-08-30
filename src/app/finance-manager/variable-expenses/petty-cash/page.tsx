@@ -282,7 +282,7 @@ export default function PettyCashPage() {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <Toaster position="top-right" />
-      <BackButton href="/finance-manager/dashboard" label="Back to Dashboard" />
+      <BackButton href="/finance-manager/variable-expenses" label="Back to Dashboard" />
       
       <div className="mb-6">
         <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Petty Cash Management</h1>

@@ -286,7 +286,7 @@ export default function ElectricBillsPage() {
       {/* Header Section */}
       <div className="bg-gradient-to-r from-white via-yellow-50 to-orange-50 dark:from-gray-800 dark:via-slate-800 dark:to-orange-900 shadow-xl border-b border-yellow-200 dark:border-orange-700">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <BackButton href="/finance-manager/dashboard" label="Back to Dashboard" />
+          <BackButton href="/finance-manager/fixed-expenses" label="Back to Dashboard" />
           <div className="mt-6 flex items-center justify-between">
             <div className="flex items-center space-x-4">
               <div className="p-3 bg-gradient-to-br from-yellow-500 to-orange-600 rounded-xl shadow-lg transform hover:scale-105 transition-transform duration-200">
@@ -569,37 +569,17 @@ export default function ElectricBillsPage() {
                         <button
                           onClick={() => {
                             try {
-                              if (!expense.documentPath) {
-                                toast.error('No document path found');
-                                return;
-                              }
-                              
-                              // Handle different path formats
-                              let url;
-                              if (expense.documentPath.startsWith('http')) {
-                                url = expense.documentPath;
-                              } else if (expense.documentPath.startsWith('/uploads/')) {
-                                url = `${APIURL}${expense.documentPath}`;
-                              } else {
-                                const filename = expense.documentPath.includes('/') ? expense.documentPath.split('/').pop() : expense.documentPath;
-                                url = `${APIURL}/uploads/${filename}`;
-                              }
-                              
-                              // Create a temporary link element to force download
-                              const link = document.createElement('a');
-                              link.href = url;
-                              link.download = expense.documentPath.includes('/') ? expense.documentPath.split('/').pop() || 'document' : expense.documentPath;
-                              document.body.appendChild(link);
-                              link.click();
-                              document.body.removeChild(link);
+                              const url = expense.documentPath?.startsWith('/') 
+                                ? `${APIURL}${expense.documentPath}` 
+                                : `${APIURL}/uploads/${expense.documentPath}`;
+                              window.open(url, '_blank');
                             } catch {
-                              toast.error('Error downloading document');
+                              toast.error('Error opening document');
                             }
                           }}
-                          className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors px-2 py-1 rounded hover:bg-blue-50 dark:hover:bg-blue-900/20"
-                          title="Download document"
+                          className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
                         >
-                          View
+                          📄 View
                         </button>
                       ) : (
                         <span className="text-gray-400">No document</span>
