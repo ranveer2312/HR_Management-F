@@ -2,15 +2,14 @@
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import axios, { AxiosResponse } from 'axios';
-import Image from 'next/image';
+import Image from 'next/image'; // Import Next.js Image component
+import axios from 'axios';
 import {
-  Clock, User, Activity, BellOff, TrendingUp, Award,
-  Shield, Zap, Star, Mail, Phone, MapPin, Briefcase,
-  Calendar, Users, Target, BarChart3, RotateCcw
+  Clock, User, Activity, TrendingUp,
+  Shield, Mail, Phone, MapPin, Briefcase,
 } from 'lucide-react';
 
-// Interfaces for data types
+// Interfaces for data type
 interface Employee {
   id: number;
   employeeName: string;
@@ -41,26 +40,15 @@ interface TodayAttendance {
   breakTime?: number;
 }
 
-interface ActivityItem {
-  id: string;
-  name: string;
-  priority: string;
-  description: string;
-  activityDate: string;
-  assignedTo: string | string[];
-  status?: string;
-  completionPercentage?: number;
-}
-
 // API Configuration
-const APIURL = process.env.NEXT_PUBLIC_API_URL || 'https://hr-management-b.onrender.com';
+const APIURL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
 
-// Work Hours Progress Ring Component (no changes needed)
+// Work Hours Progress Ring Component
 const WorkHoursRing = ({ hours = 0, targetHours = 8 }: { hours?: number; targetHours?: number }) => {
   const percentage = Math.min((hours / targetHours) * 100, 100);
   const circumference = 2 * Math.PI * 70;
   const strokeDashoffset = circumference - (percentage / 100) * circumference;
-
+  
   return (
     <div className="relative w-56 h-56 flex items-center justify-center">
       <svg className="absolute w-full h-full transform -rotate-90" viewBox="0 0 160 160">
@@ -72,10 +60,10 @@ const WorkHoursRing = ({ hours = 0, targetHours = 8 }: { hours?: number; targetH
             <stop offset="100%" stopColor="#F59E0B" />
           </linearGradient>
           <filter id="glow">
-            <feGaussianBlur stdDeviation="3" result="coloredBlur" />
-            <feMerge>
-              <feMergeNode in="coloredBlur" />
-              <feMergeNode in="SourceGraphic" />
+            <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+            <feMerge> 
+              <feMergeNode in="coloredBlur"/>
+              <feMergeNode in="SourceGraphic"/>
             </feMerge>
           </filter>
         </defs>
@@ -108,27 +96,50 @@ const WorkHoursRing = ({ hours = 0, targetHours = 8 }: { hours?: number; targetH
   );
 };
 
-// Refactored Profile Photo Component using Next.js Image component
+// Profile Photo Component with error handling
 const ProfilePhoto = ({ employee }: { employee: Employee }) => {
   const [photoUrl, setPhotoUrl] = useState<string>('');
   const [photoError, setPhotoError] = useState<boolean>(false);
   const [photoLoading, setPhotoLoading] = useState<boolean>(true);
 
   useEffect(() => {
-    if (!employee?.profilePhotoUrl) {
-      setPhotoLoading(false);
-      return;
-    }
+    const loadProfilePhoto = async () => {
+      if (!employee?.profilePhotoUrl) {
+        setPhotoLoading(false);
+        return;
+      }
 
-    // Determine the full URL
-    const fullUrl = employee.profilePhotoUrl.startsWith('http')
-      ? employee.profilePhotoUrl
-      : `${APIURL}${employee.profilePhotoUrl}`;
+      try {
+        setPhotoLoading(true);
+        setPhotoError(false);
 
-    setPhotoUrl(fullUrl);
+        // If the URL is already a complete URL (from Cloudinary), use it directly
+        if (employee.profilePhotoUrl.startsWith('http')) {
+          setPhotoUrl(employee.profilePhotoUrl);
+        } else {
+          // If it's a relative path, construct the full URL
+          setPhotoUrl(`${APIURL}${employee.profilePhotoUrl}`);
+        }
+      } catch (error) {
+        console.error('Error loading profile photo:', error);
+        setPhotoError(true);
+      } finally {
+        setPhotoLoading(false);
+      }
+    };
+
+    loadProfilePhoto();
+  }, [employee?.profilePhotoUrl]);
+
+  const handleImageError = () => {
+    setPhotoError(true);
+    setPhotoLoading(false);
+  };
+
+  const handleImageLoad = () => {
     setPhotoLoading(false);
     setPhotoError(false);
-  }, [employee?.profilePhotoUrl]);
+  };
 
   if (photoLoading) {
     return (
@@ -153,9 +164,9 @@ const ProfilePhoto = ({ employee }: { employee: Employee }) => {
       width={96}
       height={96}
       className="w-24 h-24 mx-auto mb-4 rounded-full object-cover border-4 border-white shadow-lg"
-      onError={() => setPhotoError(true)}
-      onLoad={() => setPhotoError(false)}
-      unoptimized // Use this if the external image host (like Cloudinary) is already optimized
+      onError={handleImageError}
+      onLoad={handleImageLoad}
+      unoptimized={!photoUrl.startsWith('http')} // Use unoptimized for local paths
     />
   );
 };
@@ -164,8 +175,6 @@ const ProfilePhoto = ({ employee }: { employee: Employee }) => {
 export default function MainDashboardPage() {
   const router = useRouter();
   const [employee, setEmployee] = useState<Employee | null>(null);
-  const [activities, setActivities] = useState<ActivityItem[]>([]);
-  const [activitiesLoading, setActivitiesLoading] = useState<boolean>(false);
   const [todayAttendance, setTodayAttendance] = useState<TodayAttendance | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -175,43 +184,6 @@ export default function MainDashboardPage() {
   useEffect(() => {
     const id = setInterval(() => setTick((t) => t + 1), 60000);
     return () => clearInterval(id);
-  }, []);
-
-  // Helper function to normalize date format
-  const normalizeDate = useCallback((dateValue: string | number[]): string => {
-    if (Array.isArray(dateValue) && dateValue.length >= 3) {
-      return `${dateValue[0]}-${String(dateValue[1]).padStart(2, '0')}-${String(dateValue[2]).padStart(2, '0')}`;
-    }
-    if (typeof dateValue === 'string') {
-      return dateValue.split('T')[0];
-    }
-    return '';
-  }, []);
-
-  // Fetch activities with defensive error handling
-  const fetchActivities = useCallback(async () => {
-    setActivitiesLoading(true);
-    try {
-      const params = new URLSearchParams();
-      params.set('status', 'ACTIVE');
-
-      const activitiesResponse: AxiosResponse<ActivityItem[]> = await axios.get(
-        `${APIURL}/api/activities`,
-        {
-          params,
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          timeout: 8000,
-        }
-      );
-      setActivities(Array.isArray(activitiesResponse.data) ? activitiesResponse.data : []);
-    } catch (err) {
-      console.warn('Failed to fetch activities:', err);
-      setActivities([]);
-    } finally {
-      setActivitiesLoading(false);
-    }
   }, []);
 
   // Fetch all dashboard data
@@ -226,85 +198,130 @@ export default function MainDashboardPage() {
     }
 
     try {
-      const [employeeResponse, attendanceResponse] = await Promise.all([
-        axios.get<Employee>(`${APIURL}/api/employees/byEmployeeId/${employeeId}`, {
-          timeout: 10000,
-        }),
-        axios.get<TodayAttendance[]>(`${APIURL}/api/attendance/employee/${employeeId}`, {
-          timeout: 10000,
-        }).catch(() => ({ data: [] as TodayAttendance[] })) // Handle attendance failure gracefully
-      ]);
+      // Fetch employee data
+      const employeeResponse = await axios.get<Employee>(
+        `${APIURL}/api/employees/byEmployeeId/${employeeId}`,
+        {
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          timeout: 10000, // 10 second timeout
+        }
+      );
 
-      setEmployee(employeeResponse.data);
+      const employeeData = employeeResponse.data;
+      if (!employeeData) {
+        throw new Error('Employee data not found.');
+      }
+      
+      setEmployee(employeeData);
 
-      const today = new Date().toISOString().split('T')[0];
-      const records = Array.isArray(attendanceResponse.data) ? attendanceResponse.data : [];
-      const todayRecord = records.find((record) => normalizeDate(record.date) === today);
+      // Fetch attendance data
+      let attendanceData: TodayAttendance | null = null;
+      try {
+        const attendanceResponse = await axios.get<TodayAttendance[]>(
+          `${APIURL}/api/attendance/employee/${employeeId}`,
+          {
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            timeout: 10000,
+          }
+        );
 
-      setTodayAttendance(todayRecord || {
-        employeeId: employeeId,
-        date: today,
-        checkInTime: null,
-        checkOutTime: null,
-        status: 'absent',
-        workHours: 0
-      });
+        const today = new Date().toISOString().split('T')[0];
+        const records = attendanceResponse.data || [];
+        
+        // Helper function to normalize date format
+        const normalizeDate = (dateValue: number[] | string): string => {
+          if (Array.isArray(dateValue) && dateValue.length >= 3) {
+            return `${dateValue[0]}-${String(dateValue[1]).padStart(2, '0')}-${String(dateValue[2]).padStart(2, '0')}`;
+          }
+          if (typeof dateValue === 'string') {
+            return dateValue.split('T')[0];
+          }
+          return '';
+        };
 
-      await fetchActivities();
-    } catch (err: unknown) {
+        const todayRecord = records.find((record) => normalizeDate(record.date) === today);
+        attendanceData = todayRecord || {
+          employeeId: employeeId,
+          date: today,
+          checkInTime: null,
+          checkOutTime: null,
+          status: 'absent',
+          workHours: 0
+        };
+      } catch (attendanceError) {
+        console.warn('Failed to fetch attendance data:', attendanceError);
+        attendanceData = {
+          employeeId: employeeId,
+          date: new Date().toISOString().split('T')[0],
+          checkInTime: null,
+          checkOutTime: null,
+          status: 'absent',
+          workHours: 0
+        };
+      }
+      
+      setTodayAttendance(attendanceData);
+
+    } catch (err) {
       console.error("Failed to fetch dashboard data:", err);
+      
       if (axios.isAxiosError(err)) {
         if (err.response?.status === 404) {
           setError("Employee not found. Please check your credentials.");
         } else if (err.response?.status === 401) {
-          setError("Unauthorized access. Please log in again.");
+          setError("Unauthorized access. Please login again.");
           localStorage.removeItem("employeeId");
           router.replace('/login');
           return;
         } else if (err.code === 'ECONNABORTED') {
-          setError("Request timed out. Please check your internet connection.");
+          setError("Request timeout. Please check your internet connection.");
         } else {
           setError("Failed to load dashboard data. Please check your network and try again.");
         }
       } else {
-        setError("An unexpected error occurred.");
+        setError("Failed to load dashboard data. An unexpected error occurred.");
       }
     } finally {
       setLoading(false);
     }
-  }, [router, normalizeDate, fetchActivities]);
+  }, [router]);
 
   // Calculate effective work hours
   const effectiveWorkHours = useMemo(() => {
     if (!todayAttendance) return 0;
-
+    
+    // If already checked out, use stored work hours
     if (todayAttendance.checkOutTime && todayAttendance.workHours) {
       return todayAttendance.workHours;
     }
-
+    
+    // If checked in but not out, calculate current work hours
     if (todayAttendance.checkInTime) {
       try {
         const [hours, minutes, seconds] = (todayAttendance.checkInTime || '00:00:00')
           .split(':')
           .map((v) => parseInt(v || '0', 10));
-
+        
         const startTime = new Date();
         startTime.setHours(hours, minutes, seconds || 0, 0);
-
+        
         const currentTime = new Date();
         const timeDifferenceMs = Math.max(0, currentTime.getTime() - startTime.getTime());
         const workMinutes = Math.round(timeDifferenceMs / 60000);
-
+        
         return workMinutes / 60;
       } catch (error) {
         console.error('Error calculating work hours:', error);
         return 0;
       }
     }
-
+    
     return 0;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [todayAttendance, tick]);
+  }, [todayAttendance, tick]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Initialize data on component mount
   useEffect(() => {
@@ -340,7 +357,7 @@ export default function MainDashboardPage() {
             onClick={fetchData}
             className="px-8 py-4 bg-gradient-to-r from-red-600 to-pink-600 text-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 flex items-center gap-3 mx-auto font-semibold"
           >
-            <RotateCcw size={20} /> Retry Loading
+            <Activity size={20} /> Retry Loading
           </button>
         </div>
       </div>
@@ -380,7 +397,7 @@ export default function MainDashboardPage() {
                 {employee?.status || 'Active'}
               </div>
             </div>
-
+            
             <div className="space-y-4">
               <div className="flex items-center text-sm bg-slate-50/50 p-4 rounded-xl hover:bg-slate-100/50 transition-colors">
                 <Mail size={18} className="text-blue-500 mr-3 flex-shrink-0" />
@@ -417,11 +434,11 @@ export default function MainDashboardPage() {
               </h3>
               <p className="text-sm text-slate-500 font-medium">Your daily productivity tracker</p>
             </div>
-
+            
             <div className="flex justify-center mb-8">
               <WorkHoursRing hours={effectiveWorkHours} />
             </div>
-
+            
             <div className="grid grid-cols-3 gap-4 w-full">
               <div className="p-4 bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl text-center hover:scale-105 transition-transform">
                 <div className="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center mx-auto mb-3">
@@ -432,7 +449,7 @@ export default function MainDashboardPage() {
                   {todayAttendance?.status || 'Absent'}
                 </p>
               </div>
-
+              
               <div className="p-4 bg-gradient-to-br from-purple-50 to-purple-100 rounded-2xl text-center hover:scale-105 transition-transform">
                 <div className="w-10 h-10 bg-purple-500 rounded-lg flex items-center justify-center mx-auto mb-3">
                   <Clock size={20} className="text-white" />
@@ -442,7 +459,7 @@ export default function MainDashboardPage() {
                   {effectiveWorkHours.toFixed(1)}h
                 </p>
               </div>
-
+              
               <div className="p-4 bg-gradient-to-br from-emerald-50 to-emerald-100 rounded-2xl text-center hover:scale-105 transition-transform">
                 <div className="w-10 h-10 bg-emerald-500 rounded-lg flex items-center justify-center mx-auto mb-3">
                   <TrendingUp size={20} className="text-white" />
@@ -474,134 +491,6 @@ export default function MainDashboardPage() {
           </div>
         </div>
 
-        {/* Activities Section */}
-        <div className="bg-white/80 backdrop-blur-lg rounded-3xl border border-slate-200/60 shadow-xl hover:shadow-2xl transition-all duration-500">
-          <div className="p-8 border-b border-slate-200/60">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-4">
-                <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg">
-                  <Activity size={28} className="text-white" />
-                </div>
-                <div>
-                  <h3 className="text-2xl font-bold bg-gradient-to-r from-slate-800 to-slate-600 bg-clip-text text-transparent">
-                    Recent Activities
-                  </h3>
-                  <p className="text-sm text-slate-500 mt-1 font-medium">Your latest work updates and milestones</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-4 text-sm text-slate-500">
-                <div className="flex items-center gap-2">
-                  <Calendar size={16} />
-                  <span>{new Date().toLocaleDateString()}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <BarChart3 size={16} />
-                  <span>{activities.length} Active</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="p-8">
-            {activitiesLoading ? (
-              <div className="text-center text-slate-500 py-16">
-                <div className="w-16 h-16 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-6"></div>
-                <h3 className="text-xl font-bold text-slate-700 mb-2">Loading Activities</h3>
-                <p className="font-medium">Fetching your latest work updates...</p>
-              </div>
-            ) : activities.length > 0 ? (
-              <div className="space-y-6">
-                {activities.slice(0, 5).map((activity: ActivityItem) => (
-                  <div key={activity.id} className={`flex items-center space-x-6 p-6 rounded-2xl border-2 transition-all duration-300 hover:scale-[1.02] hover:shadow-lg ${
-                    activity.priority === 'High'
-                      ? 'bg-gradient-to-r from-red-50 to-pink-50 border-red-200 hover:border-red-300'
-                      : activity.priority === 'Medium'
-                        ? 'bg-gradient-to-r from-yellow-50 to-amber-50 border-yellow-200 hover:border-yellow-300'
-                        : 'bg-gradient-to-r from-green-50 to-emerald-50 border-green-200 hover:border-green-300'
-                  }`}>
-                    <div className={`w-14 h-14 flex items-center justify-center rounded-2xl shadow-md flex-shrink-0 ${
-                      activity.priority === 'High'
-                        ? 'bg-gradient-to-br from-red-500 to-pink-600 text-white'
-                        : activity.priority === 'Medium'
-                          ? 'bg-gradient-to-br from-yellow-500 to-amber-600 text-white'
-                          : 'bg-gradient-to-br from-green-500 to-emerald-600 text-white'
-                    }`}>
-                      {activity.priority === 'High' ? <Zap size={24} /> :
-                        activity.priority === 'Medium' ? <Star size={24} /> :
-                          <Award size={24} />}
-                    </div>
-
-                    <div className="flex-1 min-w-0">
-                      <h4 className="font-bold text-slate-900 text-lg mb-1 truncate">{activity.name}</h4>
-                      <p className="text-slate-600 font-medium text-sm mb-2 line-clamp-2">{activity.description}</p>
-                      {activity.assignedTo && (
-                        <div className="flex items-center gap-2 text-xs text-slate-500">
-                          <Users size={14} />
-                          <span>Assigned to: {Array.isArray(activity.assignedTo) ? activity.assignedTo.join(', ') : activity.assignedTo}</span>
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="text-right flex-shrink-0">
-                      <p className="text-xs text-slate-400 font-medium mb-3">
-                        {new Date(activity.activityDate).toLocaleDateString()}
-                      </p>
-                      <span className={`inline-block text-xs font-bold px-4 py-2 rounded-full shadow-sm ${
-                        activity.priority === 'High'
-                          ? 'bg-red-100 text-red-800'
-                          : activity.priority === 'Medium'
-                            ? 'bg-yellow-100 text-yellow-800'
-                            : 'bg-green-100 text-green-800'
-                      }`}>
-                        {activity.priority} Priority
-                      </span>
-                      {activity.completionPercentage !== undefined && (
-                        <div className="mt-2">
-                          <div className="w-16 h-2 bg-slate-200 rounded-full overflow-hidden">
-                            <div
-                              className={`h-full transition-all duration-300 ${
-                                activity.priority === 'High' ? 'bg-red-500' :
-                                  activity.priority === 'Medium' ? 'bg-yellow-500' : 'bg-green-500'
-                              }`}
-                              style={{ width: `${activity.completionPercentage}%` }}
-                            />
-                          </div>
-                          <p className="text-xs text-slate-500 mt-1">{activity.completionPercentage}%</p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                ))}
-
-                {activities.length > 5 && (
-                  <div className="text-center pt-4">
-                    <button className="px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl font-semibold hover:shadow-lg transition-all duration-300">
-                      View All {activities.length} Activities
-                    </button>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div className="text-center py-20">
-                <div className="w-24 h-24 bg-gradient-to-br from-slate-100 to-slate-200 rounded-full flex items-center justify-center mx-auto mb-8">
-                  <BellOff size={40} className="text-slate-400" />
-                </div>
-                <h3 className="text-2xl font-bold text-slate-700 mb-3">No Recent Activities</h3>
-                <p className="text-slate-500 font-medium mb-6 max-w-md mx-auto">
-                  Your work activities and updates will appear here once they are assigned or created.
-                </p>
-                <button
-                  onClick={fetchActivities}
-                  className="px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl font-semibold hover:shadow-lg transition-all duration-300 flex items-center gap-2 mx-auto"
-                >
-                  <RotateCcw size={18} />
-                  Refresh Activities
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-
         {/* Quick Stats Row */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="bg-white/80 backdrop-blur-lg p-6 rounded-2xl border border-slate-200/60 shadow-lg hover:shadow-xl transition-all duration-300">
@@ -620,12 +509,16 @@ export default function MainDashboardPage() {
           <div className="bg-white/80 backdrop-blur-lg p-6 rounded-2xl border border-slate-200/60 shadow-lg hover:shadow-xl transition-all duration-300">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-slate-500 font-semibold mb-1">Active Tasks</p>
-                <p className="text-2xl font-bold text-slate-800">{activities.length}</p>
-                <p className="text-xs text-purple-600 font-medium">Currently assigned</p>
+                <p className="text-sm text-slate-500 font-semibold mb-1">Days Active</p>
+                <p className="text-2xl font-bold text-slate-800">
+                  {employee?.joiningDate ?
+                    Math.floor((new Date().getTime() - new Date(employee.joiningDate).getTime()) / (1000 * 3600 * 24))
+                    : 0}
+                </p>
+                <p className="text-xs text-purple-600 font-medium">Since joining</p>
               </div>
               <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center">
-                <Target size={24} className="text-white" />
+                <Activity size={24} className="text-white" />
               </div>
             </div>
           </div>
@@ -647,7 +540,7 @@ export default function MainDashboardPage() {
         {/* Footer */}
         <div className="text-center py-8">
           <p className="text-slate-400 text-sm font-medium">
-            Last updated: {new Date().toLocaleString()} &bull; Employee ID: {employee?.employeeId}
+            Last updated: {new Date().toLocaleString()} • Employee ID: {employee?.employeeId}
           </p>
         </div>
       </div>
